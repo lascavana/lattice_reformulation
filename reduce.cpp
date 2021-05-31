@@ -323,6 +323,85 @@ void print_reformulation(const char *filename, mat_ZZ basis, vec_ZZ x0)
 }
 
 
+
+void get_translation(mat_ZZ basis)
+
+{
+  int i,j,k;
+  ZZ determ;
+  mat_ZZ L, L1, basisT, test_matrix; 
+  mat_ZZ translBasis;
+
+
+  translBasis.SetDims(n-m,n);
+
+  transpose(basisT, basis);
+
+  
+  L.SetDims(n+1,2*n-m+1);
+  for (i=0;i<n+1;i++){
+     for(j=0;j<2*n-m+1;j++)
+         L[i][j]=0;
+  }
+  for (i=0;i<n;i++)
+     L[i][i]=to_ZZ(1);
+
+  L[n][n]= N1;
+  for (j=0;j<n;j++){
+     for (i=0; i<n-m; i++){
+        L[j][n+i+1] = (basis[i][j])*N2;
+     }
+  }
+
+  L1.SetDims(n+1,2*n-m+1);
+  for (k=0; k<(n-m); k++)
+  {
+    cout << k << endl;
+      for (i=0; i<n+1; i++){
+          for (j=0; j<2*n-m+1; j++)
+        L1[i][j] = L[i][j];
+      }
+      for (j=n+1; j<2*n-m+1; j++)
+          L1[n][j]=to_ZZ(0);
+      L1[n][n+k+1] = to_ZZ(-1)*(N2);
+      
+      LLL(determ, L1, 99, 100, 0);
+
+      if (L1[m][n] != N1 && L1[m][n] != -N1)
+      {
+         cout << "N1 does not appear in position [m, n]" << endl;
+         cout << L1[m][n] << endl;
+         cout << "N1 = " << N1 << endl;
+         throw  std::bad_function_call();
+      }
+
+
+      for (j=0; j<n; j++)
+         translBasis[k][j] = L1[m][j];
+     
+  }
+
+ 
+   mul(test_matrix,translBasis,basisT);
+   cout << "The translated matrix * transpose of the basis is the following matrix" << endl;
+   cout << test_matrix << endl;
+   long flag = IsIdent(test_matrix,n-m);
+   if (flag != 1){
+      cout << "Translation is not correct" << endl;
+      throw  std::bad_function_call();
+   }
+
+  ofstream output_file("translation.txt");
+  for (i=0;i<n-m;i++)
+  {
+    for (j=0;j<n;j++)
+      output_file << translBasis[i][j] << " ";
+    output_file << "\n";
+  }
+
+}
+
+
 int main(int argc, char *argv[])
 {
   long ttime;
@@ -369,6 +448,8 @@ int main(int argc, char *argv[])
   print_reformulation((char*)outputfile_ahl.c_str(), Q_ahl, x0_ahl);
   print_reformulation((char*)outputfile_cea.c_str(), Q_cea, x0_cea);
 
+  // get translation of AHL
+  get_translation(Q_ahl);
 
 
 }
