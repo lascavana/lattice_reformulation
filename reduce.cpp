@@ -67,7 +67,7 @@ void check_basis(mat_ZZ Q)
     }
 
   mul(X, Q, Atrans);
-  if (IsZero(X)) cout << "Basis was correctly generated." << endl;
+  if (IsZero(X)) cout << "  Basis was correctly generated." << endl;
   else
   {
     cout << "Error in reduction." << endl;
@@ -324,7 +324,7 @@ void print_reformulation(const char *filename, mat_ZZ basis, vec_ZZ x0)
 
 
 
-void get_translation(mat_ZZ basis)
+void print_translation(mat_ZZ basis, vec_ZZ x0)
 
 {
   int i,j,k;
@@ -354,9 +354,10 @@ void get_translation(mat_ZZ basis)
   }
 
   L1.SetDims(n+1,2*n-m+1);
+  cout << "  Getting translation matrix W" << endl;
   for (k=0; k<(n-m); k++)
   {
-    cout << k << endl;
+    cout << "  Step " << k << endl;
       for (i=0; i<n+1; i++){
           for (j=0; j<2*n-m+1; j++)
         L1[i][j] = L[i][j];
@@ -383,21 +384,29 @@ void get_translation(mat_ZZ basis)
 
  
    mul(test_matrix,translBasis,basisT);
-   cout << "The translated matrix * transpose of the basis is the following matrix" << endl;
+   cout << "  The translated matrix * transpose of the basis is the following matrix" << endl;
    cout << test_matrix << endl;
    long flag = IsIdent(test_matrix,n-m);
    if (flag != 1){
-      cout << "Translation is not correct" << endl;
+      cout << "  Translation is not correct" << endl;
       throw  std::bad_function_call();
    }
 
-  ofstream output_file("translation.txt");
+  ofstream output_file1("translation_W.txt");
   for (i=0;i<n-m;i++)
   {
     for (j=0;j<n;j++)
-      output_file << translBasis[i][j] << " ";
-    output_file << "\n";
+      output_file1 << translBasis[i][j] << " ";
+    output_file1 << "\n";
   }
+  output_file1.close();
+
+  ofstream output_file2("translation_x0.txt");
+  for (i=0;i<n;i++)
+  {
+    output_file2 << x0[i] << "\n";
+  }
+  output_file2.close();
 
 }
 
@@ -405,10 +414,24 @@ void get_translation(mat_ZZ basis)
 int main(int argc, char *argv[])
 {
   long ttime;
+  string opt;
 
-  if (argc != 3){
+  // parse command line parameters
+  if (argc < 3)
+  {
     cout << "Input as follows: reduce <inputfile> <outputfile>\n";
     return 0;
+  }
+  if (argc == 4)
+  {
+    opt = argv[3];
+    if (opt != "--translate")
+    {
+      cout << "Unidentified command line argument " << argv[3] << endl;
+      cout << "Valid arguments: " << endl;
+      cout << "--translate :: prints translation matrix " << endl;
+      throw std::invalid_argument("Invalid argument");
+    }
   }
 
   // read input file
@@ -424,14 +447,14 @@ int main(int argc, char *argv[])
   // get both reformulations
   mat_ZZ Q_ahl, Q_cea;
   vec_ZZ x0_ahl, x0_cea;
-  cout << "Reducing instance " << argv[1] << " with AHL method" << endl;
+  cout << "~ Reducing instance " << argv[1] << " with AHL method" << endl;
   MakeAHLLattice(Q_ahl, x0_ahl);
-  cout << "Reducing instance " << argv[1] << " with CEA method" << endl;
+  cout << "~ Reducing instance " << argv[1] << " with CEA method" << endl;
   MakeCEALattice(Q_cea, x0_cea);
 
   getrusage (RUSAGE_SELF, &tusage);
   ttime = (tusage.ru_utime.tv_usec + tusage.ru_stime.tv_usec) - ttime;
-  cout << "Total time: " << ttime << " microseconds" << endl;
+  cout << "~ Total time: " << ttime << " microseconds" << endl;
 
 
   // generate output file names
@@ -448,8 +471,12 @@ int main(int argc, char *argv[])
   print_reformulation((char*)outputfile_ahl.c_str(), Q_ahl, x0_ahl);
   print_reformulation((char*)outputfile_cea.c_str(), Q_cea, x0_cea);
 
-  // get translation of AHL
-  get_translation(Q_ahl);
+  // get translation of AHL if requested
+  if (opt == "--translate")
+  {
+    cout << "~ Computing AHL translation matrix" << endl;
+    print_translation(Q_ahl, x0_ahl);
+  }
 
 
 }
