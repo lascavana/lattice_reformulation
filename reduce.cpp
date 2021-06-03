@@ -332,6 +332,10 @@ void print_translation(mat_ZZ basis, vec_ZZ x0)
   mat_ZZ L, L1, basisT, test_matrix; 
   mat_ZZ translBasis;
 
+  // set reduction quality
+  int a = 30;
+  int b = 100;
+
 
   translBasis.SetDims(n-m,n);
 
@@ -366,7 +370,7 @@ void print_translation(mat_ZZ basis, vec_ZZ x0)
           L1[n][j]=to_ZZ(0);
       L1[n][n+k+1] = to_ZZ(-1)*(N2);
       
-      LLL(determ, L1, 99, 100, 0);
+      LLL(determ, L1, a, b, 0);
 
       if (L1[m][n] != N1 && L1[m][n] != -N1)
       {
