@@ -324,67 +324,37 @@ void print_reformulation(const char *filename, mat_ZZ basis, vec_ZZ x0)
 
 
 
+
 void print_translation(mat_ZZ basis, vec_ZZ x0)
 
 {
-  int i,j,k;
-  ZZ determ;
-  mat_ZZ L, L1, basisT, test_matrix; 
-  mat_ZZ translBasis;
-
-  // set reduction quality
-  int a = 30;
-  int b = 100;
-
-
-  translBasis.SetDims(n-m,n);
+  int i,j;
+  long ret, ttime;
+  vec_ZZ x, e_i;
+  mat_ZZ basisT, translBasis, test_matrix;
 
   transpose(basisT, basis);
 
-  
-  L.SetDims(n+1,2*n-m+1);
-  for (i=0;i<n+1;i++){
-     for(j=0;j<2*n-m+1;j++)
-         L[i][j]=0;
-  }
-  for (i=0;i<n;i++)
-     L[i][i]=to_ZZ(1);
+  translBasis.SetDims(n-m,n);
+  x.SetLength(n);
+  e_i.SetLength(n-m);
 
-  L[n][n]= N1;
-  for (j=0;j<n;j++){
-     for (i=0; i<n-m; i++){
-        L[j][n+i+1] = (basis[i][j])*N2;
-     }
-  }
+  struct rusage tusage;
+  getrusage(RUSAGE_SELF, &tusage);
+  ttime = tusage.ru_utime.tv_usec + tusage.ru_stime.tv_usec;
 
-  L1.SetDims(n+1,2*n-m+1);
-  cout << "  Getting translation matrix W" << endl;
-  for (k=0; k<(n-m); k++)
+  for (i=0;i<n-m;i++)
   {
-    cout << "  Step " << k << endl;
-      for (i=0; i<n+1; i++){
-          for (j=0; j<2*n-m+1; j++)
-        L1[i][j] = L[i][j];
-      }
-      for (j=n+1; j<2*n-m+1; j++)
-          L1[n][j]=to_ZZ(0);
-      L1[n][n+k+1] = to_ZZ(-1)*(N2);
-      
-      LLL(determ, L1, a, b, 0);
-
-      if (L1[m][n] != N1 && L1[m][n] != -N1)
-      {
-         cout << "N1 does not appear in position [m, n]" << endl;
-         cout << L1[m][n] << endl;
-         cout << "N1 = " << N1 << endl;
-         throw  std::bad_function_call();
-      }
-
-
-      for (j=0; j<n; j++)
-         translBasis[k][j] = L1[m][j];
-     
-  }
+    cout << "Step " << i << endl;
+    for (j=0;j<n-m;j++) e_i[j] = 0;
+    e_i[i] = to_ZZ(1);
+    ret = LatticeSolve(x, basisT, e_i, 1);
+    assert(ret);
+    for (j=0;j<n;j++) translBasis[i][j] = x[j];
+    getrusage (RUSAGE_SELF, &tusage);
+    ttime = (tusage.ru_utime.tv_usec + tusage.ru_stime.tv_usec) - ttime;
+    cout << "~ Elapsed time: " << ttime << " microseconds" << endl;
+  } 
 
  
    mul(test_matrix,translBasis,basisT);
@@ -413,6 +383,7 @@ void print_translation(mat_ZZ basis, vec_ZZ x0)
   output_file2.close();
 
 }
+
 
 
 int main(int argc, char *argv[])
@@ -481,6 +452,5 @@ int main(int argc, char *argv[])
     cout << "~ Computing AHL translation matrix" << endl;
     print_translation(Q_ahl, x0_ahl);
   }
-
 
 }
