@@ -259,8 +259,9 @@ void print_reformulation(const char *filename, mat_ZZ basis, vec_ZZ x0)
       k++;
     }
   }
-  if (obj[n-m] > 0) output_file << "+ " << obj[n-m] << "\n";
-  if (obj[n-m] < 0) output_file << obj[n-m] << "\n";
+  if (obj[n-m] > 0) output_file << "+ " << obj[n-m];
+  if (obj[n-m] < 0) output_file << obj[n-m];
+  output_file << "\n";
 
 
   // constraints
