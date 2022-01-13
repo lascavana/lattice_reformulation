@@ -17,6 +17,7 @@ using namespace NTL;
 
 // global variables
 int n, m;
+bool bounded = false;
 mat_ZZ Aext;
 long c[1000], u[1000];
 ZZ N1=to_ZZ(10000000);
@@ -46,7 +47,13 @@ void ReadConstraints(const char *finput)
     // read objective function
     for (j=0; j<n; j++) input_file >> c[j];
     // read upper bounds
-    for (j=0; j<n; j++) input_file >> u[j];
+    int max = 0;
+    for (j=0; j<n; j++)
+    {
+      input_file >> u[j];
+      max = (max > u[j]) ? max : u[j];
+    }
+    if (max > 0) bounded = true;
 
     input_file.close();
   }
@@ -173,7 +180,7 @@ vec_ZZ make_objective(mat_ZZ basis, vec_ZZ x0)
       obj[i] = 0;
       for (j=0; j<n; j++)
         obj[i] += to_ZZ(c[j])*basis[i][j];
-  }  
+  }
 
   obj[n-m]=0;
   for (j=0; j<n; j++)
@@ -220,9 +227,12 @@ void print_original(const char *filename)
   }
 
   // bounds
-  output_file << "Bounds " << "\n";
-  for (i=0; i<n; i++)
-      output_file << "x" << i+1 << " <= " << u[i] << "\n";
+  if (bounded)
+  {
+    output_file << "Bounds " << "\n";
+    for (i=0; i<n; i++)
+        output_file << "x" << i+1 << " <= " << u[i] << "\n";
+  }
 
   // variable definitions
   output_file << "Generals " << "\n";
@@ -303,9 +313,12 @@ void print_reformulation(const char *filename, mat_ZZ basis, vec_ZZ x0)
 
 
   // bounds
-  output_file << "Bounds " << "\n";
-  for (i=0; i<(n-m); i++)
-    output_file << "-inf <= k" << i+1 << " <= +inf \n";
+  if (bounded)
+  {
+    output_file << "Bounds " << "\n";
+    for (i=0; i<(n-m); i++)
+      output_file << "-inf <= k" << i+1 << " <= +inf \n";
+  }
 
   // variable definitions
   output_file << "Generals " << "\n";
@@ -355,9 +368,9 @@ void print_translation(mat_ZZ basis, vec_ZZ x0)
     getrusage (RUSAGE_SELF, &tusage);
     ttime = (tusage.ru_utime.tv_usec + tusage.ru_stime.tv_usec) - ttime;
     cout << "~ Elapsed time: " << ttime << " microseconds" << endl;
-  } 
+  }
 
- 
+
    mul(test_matrix,translBasis,basisT);
    cout << "  The translated matrix * transpose of the basis is the following matrix" << endl;
    cout << test_matrix << endl;
