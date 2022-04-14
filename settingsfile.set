@@ -1,0 +1,11 @@
+display/verblevel = 0
+estimation/restarts/restartpolicy = n
+presolving/maxrestarts = 0
+separating/maxroundsroot = 0
+separating/maxrounds = 0
+conflict/enable =  FALSE
+conflict/useprop = FALSE
+presolving/maxrounds = 0
+reoptimization/strongbranchinginit = FALSE
+constraints/linear/singletonstuffing = FALSE
+constraints/linear/aggregatevariables = FALSE
