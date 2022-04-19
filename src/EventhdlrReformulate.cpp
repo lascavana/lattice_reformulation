@@ -264,15 +264,12 @@ SCIP_RETCODE GetInstanceData(
 
 
   // get objective function and bounds//
-  objfun.resize(n2); upper.resize(n2); lower.resize(n2);
-  for (int i = 0; i < n; ++i)
-  {
-    	int index = SCIPvarGetIndex(probvars[i]) - shift;
-      objfun[index] = SCIPvarGetObj(probvars[i]);
-      upper[index] = SCIPvarGetUbLocal(probvars[i]);
-      lower[index] = SCIPvarGetLbLocal(probvars[i]);
-  }
-  for (int i = n; i < n2; ++i) { lower[i] = 0; }
+  /*
+    note: if orig problem is maximization, the obj fun coefficients
+    returned by SCIPvarGetObj will have opposite sign. The variable
+    s corrects for this.
+  */
+  double s = 1.0;
   SCIP_OBJSENSE objsense = SCIPgetObjsense(scip);
   if ( objsense == SCIP_OBJSENSE_MINIMIZE )
   {
@@ -281,7 +278,18 @@ SCIP_RETCODE GetInstanceData(
   else
   {
     maximization = TRUE;
+    s = -1.0;
   }
+  objfun.resize(n2); upper.resize(n2); lower.resize(n2);
+  for (int i = 0; i < n; ++i)
+  {
+    	int index = SCIPvarGetIndex(probvars[i]) - shift;
+      objfun[index] = s*SCIPvarGetObj(probvars[i]);
+      upper[index] = SCIPvarGetUbLocal(probvars[i]);
+      lower[index] = SCIPvarGetLbLocal(probvars[i]);
+  }
+  for (int i = n; i < n2; ++i) { lower[i] = 0; }
+
 
 
   return SCIP_OKAY;
@@ -770,6 +778,16 @@ SCIP_DECL_EVENTEXEC(EventhdlrReformulate::scip_exec)
   mat_ZZ Q; vec_ZZ x0;
   SCIPinfoMessage(scip, NULL, "    reducing kernel basis\n");
   Reduce(Aext, Q, x0);
+  // ofstream output_file2("Q.txt");
+  // for (int i=0;i<n;i++)
+  // {
+  //   for (int j=0;j<n-m;j++)
+  //     output_file2 << Q[i][j] << " ";
+  //   output_file2 << "\n";
+  // }
+  // for (int j=0;j<n;j++)
+  //   output_file2 << x0[j] << " ";
+  // output_file2 << "\n";
 
   // get tranlation of Q //
   // long ret;
