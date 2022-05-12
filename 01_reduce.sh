@@ -12,10 +12,15 @@ done
 
 for i in {1..5}
 do
-  ./build/reformulate benchmarks/cuww/cuww${i}.lp settingsfile.set
+  ./build/reformulate benchmarks/cuww/instance_${i}.lp settingsfile.set
 done
 
-for i in {1..100}
+for i in {1..5}
 do
-  ./build/reformulate benchmarks/mknapsack/instance_${i}_50_3.lp settingsfile.set
+  ./build/reformulate benchmarks/prob/prob${i}.lp settingsfile.set
+done
+
+for i in {1..50}
+do
+  ./build/reformulate benchmarks/mknapsack/instance_${i}_100_6.lp settingsfile.set
 done

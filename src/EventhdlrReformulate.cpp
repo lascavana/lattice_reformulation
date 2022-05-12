@@ -658,7 +658,23 @@ void print_reformulation(
   output_file << "Bounds\n";
   for (i=0; i<(n-m); i++)
   {
-    output_file << newlower[i] << "<= k" << i+1 << "<=" << newupper[i] << "\n";
+    if (newlower[i] < -1e9)
+    {
+      output_file << "-inf";
+    }
+    else
+    {
+      output_file << newlower[i];
+    }
+    output_file << "<= k" << i+1 << "<=";
+    if (newupper[i] > 1e9)
+    {
+      output_file << "inf" << "\n";
+    }
+    else
+    {
+      output_file << newupper[i] << "\n";
+    }
   }
 
   /* write variables */
