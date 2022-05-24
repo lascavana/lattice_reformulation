@@ -53,15 +53,14 @@ SCIP_RETCODE fromCommandLine(
    std::cout << "============" << std::endl << std::endl;
    SCIP_CALL( SCIPreadProb(scip, filename, NULL) );
 
+   /*******************
+    *    Pre-solve    *
+    *******************/
+   SCIP_CALL( SCIPpresolve(scip) );
    int m = SCIPgetNConss(scip);
    int n = SCIPgetNVars(scip);
    std::cout << "Number of constraints: " << m << "\n";
    std::cout << "Number of variables: " << n << "\n";
-
-   /*******************
-    *    Pre-solve    *
-    *******************/
-   //SCIP_CALL( SCIPpresolve(scip) );
 
 
    /*******************

@@ -4,6 +4,7 @@
 #include <cassert>
 #include <fstream>
 #include <iostream>
+#include <unordered_map>
 
 // NTL library
 #include <NTL/ZZ.h>
@@ -12,101 +13,39 @@
 
 // SCIP
 #include <scip/scip.h>
-#include "scip/type_cons.h"
 #include <scip/scipdefplugins.h>
 
 #include "EventhdlrReformulate.hpp"
 
 using namespace std;
 using namespace NTL;
+using matrix = vector<vector<int>>;
 
-/** constraint data for linear constraints */
-struct SCIP_ConsData
-{
-   SCIP_Real             lhs;                /**< left hand side of row (for ranged rows) */
-   SCIP_Real             rhs;                /**< right hand side of row */
-   SCIP_Real             maxabsval;          /**< maximum absolute value of all coefficients */
-   SCIP_Real             minabsval;          /**< minimal absolute value of all coefficients */
-   SCIP_Real             minactivity;        /**< minimal value w.r.t. the variable's local bounds for the constraint's
-                                              *   activity, ignoring the coefficients contributing with infinite value */
-   SCIP_Real             maxactivity;        /**< maximal value w.r.t. the variable's local bounds for the constraint's
-                                              *   activity, ignoring the coefficients contributing with infinite value */
-   SCIP_Real             lastminactivity;    /**< last minimal activity which was computed by complete summation
-                                              *   over all contributing values */
-   SCIP_Real             lastmaxactivity;    /**< last maximal activity which was computed by complete summation
-                                              *   over all contributing values */
-   SCIP_Real             glbminactivity;     /**< minimal value w.r.t. the variable's global bounds for the constraint's
-                                              *   activity, ignoring the coefficients contributing with infinite value */
-   SCIP_Real             glbmaxactivity;     /**< maximal value w.r.t. the variable's global bounds for the constraint's
-                                              *   activity, ignoring the coefficients contributing with infinite value */
-   SCIP_Real             lastglbminactivity; /**< last global minimal activity which was computed by complete summation
-                                              *   over all contributing values */
-   SCIP_Real             lastglbmaxactivity; /**< last global maximal activity which was computed by complete summation
-                                              *   over all contributing values */
-   SCIP_Real             maxactdelta;        /**< maximal activity contribution of a single variable, or SCIP_INVALID if invalid */
-   SCIP_VAR*             maxactdeltavar;     /**< variable with maximal activity contribution, or NULL if invalid */
-   uint64_t              possignature;       /**< bit signature of coefficients that may take a positive value */
-   uint64_t              negsignature;       /**< bit signature of coefficients that may take a negative value */
-   SCIP_ROW*             row;                /**< LP row, if constraint is already stored in LP row format */
-   SCIP_NLROW*           nlrow;              /**< NLP row, if constraint has been added to NLP relaxation */
-   SCIP_VAR**            vars;               /**< variables of constraint entries */
-   SCIP_Real*            vals;               /**< coefficients of constraint entries */
-   SCIP_EVENTDATA**      eventdata;          /**< event data for bound change events of the variables */
-   int                   minactivityneginf;  /**< number of coefficients contributing with neg. infinite value to minactivity */
-   int                   minactivityposinf;  /**< number of coefficients contributing with pos. infinite value to minactivity */
-   int                   maxactivityneginf;  /**< number of coefficients contributing with neg. infinite value to maxactivity */
-   int                   maxactivityposinf;  /**< number of coefficients contributing with pos. infinite value to maxactivity */
-   int                   minactivityneghuge; /**< number of coefficients contributing with huge neg. value to minactivity */
-   int                   minactivityposhuge; /**< number of coefficients contributing with huge pos. value to minactivity */
-   int                   maxactivityneghuge; /**< number of coefficients contributing with huge neg. value to maxactivity */
-   int                   maxactivityposhuge; /**< number of coefficients contributing with huge pos. value to maxactivity */
-   int                   glbminactivityneginf;/**< number of coefficients contrib. with neg. infinite value to glbminactivity */
-   int                   glbminactivityposinf;/**< number of coefficients contrib. with pos. infinite value to glbminactivity */
-   int                   glbmaxactivityneginf;/**< number of coefficients contrib. with neg. infinite value to glbmaxactivity */
-   int                   glbmaxactivityposinf;/**< number of coefficients contrib. with pos. infinite value to glbmaxactivity */
-   int                   glbminactivityneghuge;/**< number of coefficients contrib. with huge neg. value to glbminactivity */
-   int                   glbminactivityposhuge;/**< number of coefficients contrib. with huge pos. value to glbminactivity */
-   int                   glbmaxactivityneghuge;/**< number of coefficients contrib. with huge neg. value to glbmaxactivity */
-   int                   glbmaxactivityposhuge;/**< number of coefficients contrib. with huge pos. value to glbmaxactivity */
-   int                   varssize;           /**< size of the vars- and vals-arrays */
-   int                   nvars;              /**< number of nonzeros in constraint */
-   int                   nbinvars;           /**< the number of binary variables in the constraint, only valid after
-                                              *   sorting in stage >= SCIP_STAGE_INITSOLVE
-                                              */
-   unsigned int          boundstightened:2;  /**< is constraint already propagated with bound tightening? */
-   unsigned int          rangedrowpropagated:2; /**< did we perform ranged row propagation on this constraint?
-                                                 *   (0: no, 1: yes, 2: with potentially adding artificial constraint */
-   unsigned int          validmaxabsval:1;   /**< is the maximum absolute value valid? */
-   unsigned int          validminabsval:1;   /**< is the minimum absolute value valid? */
-   unsigned int          validactivities:1;  /**< are the activity bounds (local and global) valid? */
-   unsigned int          validminact:1;      /**< is the local minactivity valid? */
-   unsigned int          validmaxact:1;      /**< is the local maxactivity valid? */
-   unsigned int          validglbminact:1;   /**< is the global minactivity valid? */
-   unsigned int          validglbmaxact:1;   /**< is the global maxactivity valid? */
-   unsigned int          presolved:1;        /**< is constraint already presolved? */
-   unsigned int          removedfixings:1;   /**< are all fixed variables removed from the constraint? */
-   unsigned int          validsignature:1;   /**< is the bit signature valid? */
-   unsigned int          changed:1;          /**< was constraint changed since last aggregation round in preprocessing? */
-   unsigned int          normalized:1;       /**< is the constraint in normalized form? */
-   unsigned int          upgradetried:1;     /**< was the constraint already tried to be upgraded? */
-   unsigned int          upgraded:1;         /**< is the constraint upgraded and will it be removed after preprocessing? */
-   unsigned int          indexsorted:1;      /**< are the constraint's variables sorted by type and index? */
-   unsigned int          merged:1;           /**< are the constraint's equal variables already merged? */
-   unsigned int          cliquesadded:1;     /**< were the cliques of the constraint already extracted? */
-   unsigned int          implsadded:1;       /**< were the implications of the constraint already extracted? */
-   unsigned int          coefsorted:1;       /**< are variables sorted by type and their absolute activity delta? */
-   unsigned int          varsdeleted:1;      /**< were variables deleted after last cleanup? */
-   unsigned int          hascontvar:1;       /**< does the constraint contain at least one continuous variable? */
-   unsigned int          hasnonbinvar:1;     /**< does the constraint contain at least one non-binary variable? */
-   unsigned int          hasnonbinvalid:1;   /**< is the information stored in hasnonbinvar and hascontvar valid? */
-   unsigned int          checkabsolute:1;    /**< should the constraint be checked w.r.t. an absolute feasibilty tolerance? */
-};
 
 int to_int(float value)
 {
   float frac = value - std::floor(value);
   assert(frac<1e-8);
   return static_cast<int>(value);
+}
+
+matrix matrix_multiply(matrix A, matrix B)
+{
+    int m = A.size();
+    int n = B[0].size();
+    int p = B.size();
+    assert(A[0].size() == p);
+
+    matrix C(m, vector<int>(n, 0)); // mxn matrix of zeros
+    for (int i = 0; i < m; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            for (int k = 0; k < p; k++)
+                C[i][j] += A[i][k] * B[k][j];
+        }
+    }
+    return C;
 }
 
 void check_basis(mat_ZZ Aext, mat_ZZ Q)
@@ -147,44 +86,57 @@ SCIP_RETCODE GetInstanceData(
 {
   SCIPinfoMessage(scip, NULL, "    retreiving constraint matrix\n");
 
-  // check stage //
+  /* check stage */
 	assert(scip != nullptr);
 	if (SCIPgetStage(scip) != SCIP_STAGE_SOLVING) {
     SCIPerrorMessage("cannot branch when not solving\n");
 		return SCIP_INVALIDCALL;
 	}
 
-  // get linear constraints //
-  SCIP_CONSHDLR* conshdlr = SCIPfindConshdlr(scip, "linear");
-  SCIP_CONS** conss = SCIPconshdlrGetConss(conshdlr);
+  /* get constraints */
+  SCIP_CONS** conss = SCIPgetConss(scip);
 
-  // set dimensions //
-  int m = SCIPconshdlrGetNConss(conshdlr);
+  /* set dimensions */
   int n = SCIPgetNVars(scip);
+  int m = SCIPgetNConss(scip);
   mat_ZZ Aext;
   Aext.SetDims(m,n+2); // Aext = [lhs|A|rhs]
+  SCIPinfoMessage(scip, NULL, "    Aext dim: (%d, %d)\n", m, n+2);
 
-  // shift variable indexing //
-  int shift = 99999999;
-  SCIP_VAR** probvars = SCIPgetVars(scip);
+  /* assign var index to a matrix colum */
+  unordered_map<int, int> idx2col;
+  SCIP_VAR** allvars = SCIPgetVars(scip);
   for (int i = 0; i < n; ++i)
   {
-    	int index = SCIPvarGetIndex(probvars[i]);
-      if (index < shift) shift = index;
+    	int index = SCIPvarGetIndex(allvars[i]);
+      idx2col.insert({index, i});
   }
 
   /* get contraint data */
   int n2 = n, m2 = m;
+  unsigned int success = TRUE;
   for (int i = 0; i < m; ++i)
   {
-    SCIP_CONSDATA* data = SCIPconsGetData(conss[i]);
-    int nvars = data->varssize;
-    SCIP_Real* vals = data->vals;
-    SCIP_VAR** vars = data->vars;
-    SCIP_Real rhs = data->rhs;
-    SCIP_Real lhs = data->lhs;
+    /* get number of variables */
+    int nvars;
+    SCIPgetConsNVars(scip, conss[i], &nvars, &success);
+    assert(success);
 
-    // handle constraint
+    /* get values and variables */
+    SCIP_VAR** vars;
+    SCIP_Real* vals;
+    SCIP_CALL( SCIPallocBufferArray(scip, &vars, nvars) );
+    SCIP_CALL( SCIPallocBufferArray(scip, &vals, nvars) );
+    SCIP_CALL( SCIPgetConsVals(scip, conss[i], vals, nvars, &success) );
+    assert(success);
+    SCIP_CALL( SCIPgetConsVars(scip, conss[i], vars, nvars, &success) );
+    assert(success);
+
+    /* get lhs and rhs */
+    SCIP_Real lhs = SCIPconsGetLhs(scip, conss[i], &success);
+    SCIP_Real rhs = SCIPconsGetRhs(scip, conss[i], &success);
+
+    /* handle constraint */
     if (rhs-lhs > 0) // different
     {
       n2++; // will need a slack variable
@@ -194,24 +146,24 @@ SCIP_RETCODE GetInstanceData(
       }
     }
 
-    // fill in matrix entries
+    /* fill in matrix entries */
     for (int j = 0; j < nvars; ++j)
     {
       // check that variables are not continuous (not implemented yet)
       // SCIP_VARTYPE vartype = SCIPvarGetType(vars[j]);
-      // assert( vartype !=  SCIP_VARTYPE_CONTINUOUS );
-
-      int val = to_int(vals[j]);
-      int idx = SCIPvarGetIndex(vars[j]) - shift;
-
-      Aext[i][idx+1] = val;
+      //assert( vartype !=  SCIP_VARTYPE_CONTINUOUS );
+      if (vals[j] == 0) continue;
+      int col = idx2col[ SCIPvarGetIndex(vars[j]) ];
+      Aext[i][col+1] = vals[j];
     }
     Aext[i][0] = lhs;
     Aext[i][n+1] = rhs;
-    // SCIPinfoMessage(scip, NULL, "lhs=%ld , rhs=%ld\n", conv<long>(Aext[i][0]), conv<long>(Aext[i][n+1]));
 
+    /* release arrays */
+    SCIPfreeBufferArray(scip, &vals);
+    SCIPfreeBufferArray(scip, &vars);
   }
-
+  SCIPinfoMessage(scip, NULL, "    Added %d slack variables \n", n2-n);
 
   /* post-process data and save into consmat */
   int idx = 0;
@@ -280,16 +232,16 @@ SCIP_RETCODE GetInstanceData(
     maximization = TRUE;
     s = -1.0;
   }
-  objfun.resize(n2); upper.resize(n2); lower.resize(n2);
+  objfun.resize(n2+1); upper.resize(n2); lower.resize(n2);
   for (int i = 0; i < n; ++i)
   {
-    	int index = SCIPvarGetIndex(probvars[i]) - shift;
-      objfun[index] = s*SCIPvarGetObj(probvars[i]);
-      upper[index] = SCIPvarGetUbLocal(probvars[i]);
-      lower[index] = SCIPvarGetLbLocal(probvars[i]);
+    	int col = idx2col[ SCIPvarGetIndex(allvars[i]) ] ;
+      objfun[col] = s*SCIPvarGetObj(allvars[i]);
+      upper[col] = SCIPvarGetUbLocal(allvars[i]);
+      lower[col] = SCIPvarGetLbLocal(allvars[i]);
   }
+  objfun[n2] = SCIPgetTransObjoffset(scip);
   for (int i = n; i < n2; ++i) { lower[i] = 0; }
-
 
 
   return SCIP_OKAY;
@@ -300,14 +252,14 @@ SCIP_RETCODE GetInstanceData(
 void Reduce(
   mat_ZZ Aext,
   mat_ZZ &Q,
-  vec_ZZ &x0
+  vec_ZZ &x0,
+  ZZ &determ
 )
 {
   int i,j;
-  ZZ determ;
   mat_ZZ L, U, X1, Atrans;
-  ZZ N1=to_ZZ(10000000);
-  ZZ N2=to_ZZ(1000000000);
+  ZZ N1=to_ZZ(100000000000);
+  ZZ N2=to_ZZ(1000000000000);
 
   int m = Aext.NumRows();
   int n = Aext.NumCols() - 1;
@@ -330,6 +282,9 @@ void Reduce(
 
   // lattice reduction
   LLL(determ, L, U, 99, 100, 0);
+  int p = U.NumCols();
+  long flag = IsIdent(U, p);
+  assert(flag);
 
   // check for successful reduction
   if (L[n-m][n] != N1 && L[n-m][n] != -N1)
@@ -357,15 +312,15 @@ void Reduce(
 
 /* get new variable bounds */
 SCIP_RETCODE get_new_varbounds(
-  mat_ZZ basis,
+  matrix basis,
   vector<double> lhs,
   vector<double> rhs,
   vector<int> &upper_bounds,
   vector<int> &lower_bounds
 )
 {
-  int m = basis.NumRows();
-  int n = basis.NumCols();
+  int m = basis.size();
+  int n = basis[0].size();
 
   SCIP* scip;
   SCIPcreate(&scip);
@@ -431,7 +386,7 @@ SCIP_RETCODE get_new_varbounds(
   /* get upper bounds */
   for( int k = 0; k < n; ++k )
   {
-    SCIPinfoMessage(scip, NULL, "getting upper bound for var %d\n", k);
+    //SCIPinfoMessage(scip, NULL, "getting upper bound for var %d\n", k);
     vector<SCIP_Real> objfun(n, 0.0);
     objfun[k] = 1.0;
     SCIP_CALL( SCIPchgReoptObjective(scip,
@@ -504,24 +459,26 @@ SCIP_RETCODE get_new_varbounds(
 }
 
 /* get new objective function */
-vec_ZZ get_new_objfun(mat_ZZ basis, vec_ZZ x0, vector<double> c)
+vector<int> get_new_objfun(
+  matrix basis,
+  vector<int> x0,
+  vector<double> c)
 {
-  int n = basis.NumRows();
-  int m = n - basis.NumCols();
+  int n = basis.size();
+  int m = n - basis[0].size();
 
-  vec_ZZ obj;
-  obj.SetLength(n-m+1);
+  vector<int> obj(n-m+1, 0);
 
   for (int i=0; i<(n-m); i++)
   {
-      obj[i] = 0;
       for (int j=0; j<n; j++)
-        obj[i] += to_ZZ(c[j])*basis[j][i];
+        obj[i] += to_int(c[j])*basis[j][i];
   }
 
   obj[n-m]=0;
   for (int j=0; j<n; j++)
-    obj[n-m]+=to_ZZ(c[j])*x0[j];
+    obj[n-m]+=to_int(c[j])*x0[j];
+  obj[n-m]+=to_int(c[n]);
 
   return obj;
 }
@@ -537,16 +494,81 @@ string get_new_filename(
   string dir = path.substr(0, dirpos);
   // get file
   string file = path.substr(dirpos+1);
-  string filename = dir + "/ahl_" + file;
+  // remove extension
+  size_t extpos = file.find_last_of(".");
+  file = file.substr(0, extpos);
+  string filename = dir + "/ahl_" + file + ".lp";
   return filename;
 }
 
+void nnegative_quad_transform(
+  SCIP* scip,
+  matrix &basis,
+  vector<double> &lhs,
+  vector<double> &rhs,
+  vector<int> &upper_bounds,
+  vector<int> &lower_bounds,
+  vector<int> &obj
+)
+{
+  int n = basis.size();
+  int p = lower_bounds.size();
+
+  /* mu' =  A*mu + b */
+  vector<int> b(p, 0);
+  matrix A(p, vector<int>(p, 0)); // pxp matrix of all zeros
+
+  for (int i=0; i<p; i++)
+  {
+    if (lower_bounds[i] > -1e9)
+    {
+      A[i][i] = 1;
+      b[i] = -lower_bounds[i];
+      upper_bounds[i] = upper_bounds[i] - lower_bounds[i];
+      lower_bounds[i] = 0;
+    }
+    else
+    {
+      assert(upper_bounds[i]<1e9);
+      A[i][i] = -1;
+      b[i] = upper_bounds[i];
+      upper_bounds[i] = SCIPinfinity(scip);
+      lower_bounds[i] = 0;
+      //SCIPinfoMessage(scip, NULL, "infinite lower bound. New upper bound %d\n", upper_bounds[i]);
+    }
+  }
+
+  /* update basis */
+  basis = matrix_multiply(basis, A);
+
+  /* update rhs and lhs */
+  for (int i=0; i<n; i++)
+  {
+    int shift = 0;
+    for (int j=0; j<p; j++)
+    {
+      shift += basis[i][j]*b[j];
+    }
+    lhs[i] += shift;
+    rhs[i] += shift;
+  }
+
+  /* update objective function */
+  int shift = 0;
+  for (int i=0; i<p; i++)
+  {
+    obj[i] = obj[i]*A[i][i];
+    shift += obj[i]*b[i];
+  }
+  obj[p] = obj[p] - shift;
+
+}
+
 /* print reformulation */
-void print_reformulation(
+void print_original(
   SCIP* scip,
   const char *filename,
-  mat_ZZ basis,
-  vec_ZZ x0,
+  mat_ZZ Aext,
   vector<double> upper,
   vector<double> lower,
   vector<double> objfun,
@@ -556,25 +578,140 @@ void print_reformulation(
   int i, j, k = 0;
   ofstream output_file(filename);
 
-  int n = basis.NumRows();
-  int m = n - basis.NumCols();
+  int n = Aext.NumCols() - 1;
+  int m = Aext.NumRows();
+
+
+  /* write objective function */
+  if (maximization) { output_file << "maximize "; }
+  else { output_file << "minimize "; }
+  for (j=0; j<n; j++)
+  {
+    if (objfun[j] != 0)
+    {
+      if (k>20){k=0; output_file << "\n";}
+      if (objfun[j]>0)
+      {
+        output_file << "+"<<objfun[j]<<" k"<<j+1<< " ";
+      }
+      else
+      {
+        output_file << objfun[j]<<" k"<<j+1<< " ";
+      }
+      k++;
+    }
+  }
+  if (objfun[n] > 0) output_file << "+ " << objfun[n];
+  if (objfun[n] < 0) output_file << objfun[n];
+  output_file << "\n";
+
+
+  /* write constraints */
+  int conss_counter = 0;
+  output_file << "subject to" << "\n";
+  for (i=0;i<m;i++)
+  {
+    if (Aext[i][n]>1e9) continue;
+    k=0;
+    conss_counter++;
+    output_file << "C" << conss_counter << ": ";
+    for (j=0; j<n; j++)
+    {
+      if (Aext[i][j] != 0)
+      {
+        if (k>20){k=0; output_file << "\n";}
+        if (Aext[i][j] > 0)
+        {
+          output_file << "+"<<Aext[i][j]<<" k"<<j+1<<" ";
+        }
+        else
+        {
+          output_file << Aext[i][j]<<" k"<<j+1<<" ";
+        }
+        k++;
+      }
+    }
+    output_file << " = ";
+    output_file << Aext[i][n] << "\n";
+  }
+
+  /* write variable bounds */
+  output_file << "Bounds\n";
+  for (i=0; i<n; i++)
+  {
+    if (lower[i]<-1e9)
+    {
+      output_file << "-inf";
+    }
+    else
+    {
+      output_file << lower[i];
+    }
+    output_file << "<= k" << i+1 << "<=";
+    if (upper[i]>1e9)
+    {
+      output_file << "inf" << "\n";
+    }
+    else
+    {
+      output_file << upper[i] << "\n";
+    }
+  }
+
+  /* write variables */
+  output_file << "Generals " << "\n";
+  k=0;
+  for (i=0; i<n; i++)
+  {
+    if (k>20){k=0; output_file << "\n";}
+    output_file << "k" << i+1 << " ";
+    k++ ;
+  }
+
+
+  output_file << "\nEnd \n";
+  output_file << "\n\n";
+  output_file.close();
+}
+
+
+
+/* print reformulation */
+void print_reformulation(
+  SCIP* scip,
+  const char *filename,
+  matrix basis,
+  vector<int> x0,
+  vector<double> upper,
+  vector<double> lower,
+  vector<double> objfun,
+  bool maximization
+)
+{
+  int i, j, k = 0;
+  ofstream output_file(filename);
+
+  int n = basis.size();
+  int m = n - basis[0].size();
 
   /* get new objective function */
-  vec_ZZ obj = get_new_objfun(basis, x0, objfun);
+  vector<int> obj = get_new_objfun(basis, x0, objfun);
 
-  /* get bounds of new variables */
+  /* get rhs and lhs of constraints */
   vector<double> lhs, rhs;
   for (j = 0; j < n; j++)
   {
-    if (lower[j] < -1e10) { lhs.push_back( -SCIPinfinity(scip) ); }
-    else { lhs.push_back( lower[j] - conv<double>(x0[j]) ); }
-    if (upper[j] > 1e10) { rhs.push_back( SCIPinfinity(scip) ); }
-    else { rhs.push_back( upper[j] - conv<double>(x0[j]) ); }
+    lhs.push_back( lower[j] - conv<double>(x0[j]) );
+    rhs.push_back( upper[j] - conv<double>(x0[j]) );
   }
+
+  /* get bounds of new variables */
   vector<int> newupper, newlower;
   SCIPinfoMessage(scip, NULL, "   calculating bounds for new variables.\n");
   SCIP_RETCODE retcode = get_new_varbounds(basis, lhs, rhs, newupper, newlower);
 
+  /* transform variables to nonnegative quadrant */
+  //nnegative_quad_transform(scip, basis, lhs, rhs, newupper, newlower, obj);
 
   /* write objective function */
   if (maximization) { output_file << "maximize "; }
@@ -605,7 +742,7 @@ void print_reformulation(
   output_file << "subject to" << "\n";
   for (j=0;j<n;j++) //  Q\mu >= l-x0
   {
-    if (lower[j] < -1e10) continue;
+    if (lhs[j]<-1e9) continue;
     k=0;
     conss_counter++;
     output_file << "C" << conss_counter << ": ";
@@ -630,7 +767,7 @@ void print_reformulation(
   }
   for (j=0;j<n;j++) //  Q\mu <= u-x0
   {
-    if (upper[j] > 1e10) continue;
+    if (rhs[j]>1e9) continue;
     k=0;
     conss_counter++;
     output_file << "C" << conss_counter << ": ";
@@ -658,7 +795,7 @@ void print_reformulation(
   output_file << "Bounds\n";
   for (i=0; i<(n-m); i++)
   {
-    if (newlower[i] < -1e9)
+    if (newlower[i]<-1e9)
     {
       output_file << "-inf";
     }
@@ -667,7 +804,7 @@ void print_reformulation(
       output_file << newlower[i];
     }
     output_file << "<= k" << i+1 << "<=";
-    if (newupper[i] > 1e9)
+    if (newupper[i]>1e9)
     {
       output_file << "inf" << "\n";
     }
@@ -774,36 +911,56 @@ SCIP_DECL_EVENTEXEC(EventhdlrReformulate::scip_exec)
   SCIPinfoMessage(scip, NULL, "Shape of Aext: (%d,%d) \n", m,n+1);
 
   // Save matrix //
-  ofstream output_file("contraint_matrix.txt");
-  for (int i=0;i<m;i++)
+  bool save_mat = FALSE;
+  if (save_mat)
   {
-    for (int j=0;j<n+1;j++)
-      output_file << Aext[i][j] << " ";
+    ofstream output_file("contraint_matrix.txt");
+    output_file << n << " " << m << "\n";
+    for (int i=0;i<m;i++)
+    {
+      for (int j=0;j<n;j++)
+        output_file << Aext[i][j] << " ";
+      output_file << -Aext[i][n];
+      output_file << "\n";
+    }
+    for (int j=0;j<n;j++)
+      output_file << lower[j] << " ";
     output_file << "\n";
+    for (int j=0;j<n;j++)
+      output_file << upper[j] << " ";
+    output_file << "\n";
+    output_file.close();
+    string filename2 = "test.lp";
+    print_original(scip, filename2.c_str() , Aext, upper, lower, objfun, maximization);
   }
-  for (int j=0;j<n;j++)
-    output_file << lower[j] << " ";
-  output_file << "\n";
-  for (int j=0;j<n;j++)
-    output_file << upper[j] << " ";
-  output_file << "\n";
-  output_file.close();
 
 
   // get kernel basis //
-  mat_ZZ Q; vec_ZZ x0;
+  mat_ZZ Q; vec_ZZ x0; ZZ determ;
   SCIPinfoMessage(scip, NULL, "    reducing kernel basis\n");
-  Reduce(Aext, Q, x0);
-  // ofstream output_file2("Q.txt");
-  // for (int i=0;i<n;i++)
-  // {
-  //   for (int j=0;j<n-m;j++)
-  //     output_file2 << Q[i][j] << " ";
-  //   output_file2 << "\n";
-  // }
-  // for (int j=0;j<n;j++)
-  //   output_file2 << x0[j] << " ";
-  // output_file2 << "\n";
+  Reduce(Aext, Q, x0, determ);
+  bool print_Q = FALSE; bool write_determ = FALSE;
+  if (print_Q)
+  {
+    ofstream output_file2("Q.txt");
+    for (int i=0;i<n;i++)
+    {
+      for (int j=0;j<n-m;j++)
+        output_file2 << Q[i][j] << " ";
+      output_file2 << "\n";
+    }
+    for (int j=0;j<n;j++)
+      output_file2 << x0[j] << " ";
+    output_file2 << "\n";
+  }
+  if (write_determ)
+  {
+    fstream log;
+    log.open("determinants.txt", fstream::app);
+    log << instancepath << " " << determ << "\n";
+    log.close();
+  }
+
 
   // get tranlation of Q //
   // long ret;
@@ -838,9 +995,19 @@ SCIP_DECL_EVENTEXEC(EventhdlrReformulate::scip_exec)
   // }
   // output_file3.close();
 
-  // print the reformulated problem //
+  /* print the reformulated problem */
+  vector<int> x(n, 0);
+  matrix basis(n, vector<int>(n-m, 0));
+  for (int i=0;i<n;i++)
+  {
+    x[i] = conv<int>(x0[i]);
+    for (int j=0;j<n-m;j++)
+    {
+      basis[i][j] = conv<int>(Q[i][j]);
+    }
+  }
   string filename = get_new_filename(instancepath);
-  print_reformulation(scip, filename.c_str() , Q, x0, upper, lower, objfun, maximization);
+  print_reformulation(scip, filename.c_str() , basis, x, upper, lower, objfun, maximization);
 
 
   SCIP_CALL( SCIPdropEvent( scip, SCIP_EVENTTYPE_NODEFOCUSED, eventhdlr, NULL, -1) );
