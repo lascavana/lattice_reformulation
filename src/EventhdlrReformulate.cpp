@@ -258,13 +258,13 @@ void Reduce(
 {
   int i,j;
   mat_ZZ L, U, X1, Atrans;
-  ZZ N1=to_ZZ(100000000000);
-  ZZ N2=to_ZZ(1000000000000);
+  ZZ N1=to_ZZ(10000000);
+  ZZ N2=to_ZZ(1000000000);
 
   int m = Aext.NumRows();
   int n = Aext.NumCols() - 1;
 
-  // create L matrix
+  /* create L matrix */
   L.SetDims(n+1,n+m+1);
   for (i=0;i<n+1;i++)
   {
@@ -280,33 +280,36 @@ void Reduce(
   for (i=0; i<m; i++)
     L[n][n+i+1] = to_ZZ(-Aext[i][n])*(N2);
 
-  // lattice reduction
+  /* lattice reduction */
   LLL(determ, L, U, 99, 100, 0);
-  int p = U.NumCols();
-  long flag = IsIdent(U, p);
-  assert(flag);
 
-  // check for successful reduction
-  if (L[n-m][n] != N1 && L[n-m][n] != -N1)
+  /* find N1 in L matrix */
+    /* Note: it should appear in position [n-p][n], where
+       p is the number of linearly independent rows (therefore
+       smaller or equal to m). */
+  int p;
+  for (i=0;i<n+1;i++)
   {
-    cout << "N1 does not appear in position [n-m, n]" << endl;
-    cout << "L[n-m][n] = " << L[n-m][n] << endl;
-    cout << "N1 = " << N1 << endl;
-    throw  bad_function_call();
+    if (L[i][n] == 0) continue;
+    else
+    {
+      assert(L[i][n] == N1 || L[i][n] == -N1);
+      p = n-i;
+      break;
+    }
   }
+  assert(p<=m);
 
-  // get AHL basis
-  Q.SetDims(n,n-m);
-  for (i=0;i<n-m; i++){
+  /* get kernel lattice basis */
+  Q.SetDims(n,n-p);
+  for (i=0;i<n-p; i++){
     for (j=0;j<n;j++)
       Q[j][i]=L[i][j];
    }
-   check_basis(Aext, Q);
+  check_basis(Aext, Q);
 
   x0.SetLength(n);
-  for (i=0; i<n; i++)
-    x0[i] = L[n-m][i];
-
+  for (i=0; i<n; i++) x0[i] = L[n-p][i];
 
 }
 
@@ -831,7 +834,6 @@ void print_reformulation(
 }
 
 /** destructor of event handler to free user data (called when SCIP is exiting) */
-
 SCIP_DECL_EVENTFREE(EventhdlrReformulate::scip_free)
 {  /*lint --e{715}*/
    return SCIP_OKAY;
@@ -935,10 +937,11 @@ SCIP_DECL_EVENTEXEC(EventhdlrReformulate::scip_exec)
   }
 
 
-  // get kernel basis //
+  /* get kernel basis */
   mat_ZZ Q; vec_ZZ x0; ZZ determ;
   SCIPinfoMessage(scip, NULL, "    reducing kernel basis\n");
   Reduce(Aext, Q, x0, determ);
+  m = n - Q.NumCols(); // update m. This is now the number of l.i rows!
   bool print_Q = FALSE; bool write_determ = FALSE;
   if (print_Q)
   {
