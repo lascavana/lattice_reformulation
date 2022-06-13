@@ -319,7 +319,8 @@ void Reduce(
     if (L[i][n] == 0) continue;
     else
     {
-      assert(L[i][n] == N1 || L[i][n] == -N1);
+      if (L[i][n] != N1 && L[i][n] != -N1)
+        throw std::runtime_error("ERROR: N1 not found. Instance infeasible");
       p = n-i;
       break;
     }
@@ -967,8 +968,16 @@ SCIP_DECL_EVENTEXEC(EventhdlrReformulate::scip_exec)
   /* get kernel basis */
   mat_ZZ Q; vec_ZZ x0; ZZ determ;
   SCIPinfoMessage(scip, NULL, "    reducing kernel basis\n");
-  Reduce(Aext, Q, x0, determ);
-  m = n - Q.NumCols(); // update m. This is now the number of l.i rows!
+  try
+  {
+    Reduce(Aext, Q, x0, determ);
+  }
+  catch (const std::runtime_error& e)
+  {
+    cout << e.what() << endl;
+    return SCIP_ERROR;
+  }
+  m = n - Q.NumCols(); // update m. This is now the number of l.i. rows!
   bool print_Q = FALSE; bool write_determ = FALSE;
   if (print_Q)
   {
