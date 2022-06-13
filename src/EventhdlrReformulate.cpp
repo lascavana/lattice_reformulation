@@ -21,11 +21,19 @@ using namespace std;
 using namespace NTL;
 using matrix = vector<vector<int>>;
 
-
-int to_int(float value)
+ZZ double2zz(double value)
 {
-  float frac = value - std::floor(value);
-  assert(frac<1e-8);
+  double frac = value - std::floor(value);
+  if (frac>1e-8)
+    throw std::invalid_argument("ERROR: coefficient not integer");
+  return to_ZZ(value);
+}
+
+int double2int(double value)
+{
+  double frac = value - std::floor(value);
+  if (frac>1e-8)
+    throw std::invalid_argument("ERROR: coefficient not integer");
   return static_cast<int>(value);
 }
 
@@ -154,16 +162,34 @@ SCIP_RETCODE GetInstanceData(
       //assert( vartype !=  SCIP_VARTYPE_CONTINUOUS );
       if (vals[j] == 0) continue;
       int col = idx2col[ SCIPvarGetIndex(vars[j]) ];
-      Aext[i][col+1] = vals[j];
+      try
+      {
+        Aext[i][col+1] = double2zz(vals[j]);
+      }
+      catch (const std::invalid_argument& e)
+      {
+        cout << e.what() << endl;
+        return SCIP_ERROR;
+      }
     }
-    Aext[i][0] = lhs;
-    Aext[i][n+1] = rhs;
+
+    try
+    {
+      Aext[i][0] = double2zz(lhs);
+      Aext[i][n+1] = double2zz(rhs);
+    }
+    catch (const std::invalid_argument& e)
+    {
+      cout << e.what() << endl;
+      return SCIP_ERROR;
+    }
 
     /* release arrays */
     SCIPfreeBufferArray(scip, &vals);
     SCIPfreeBufferArray(scip, &vars);
   }
-  SCIPinfoMessage(scip, NULL, "    Added %d slack variables \n", n2-n);
+  SCIPinfoMessage(scip, NULL, "    Added %d slack variables ", n2-n);
+  SCIPinfoMessage(scip, NULL, "and %d constraints. \n", m2-m);
 
   /* post-process data and save into consmat */
   int idx = 0;
@@ -475,13 +501,13 @@ vector<int> get_new_objfun(
   for (int i=0; i<(n-m); i++)
   {
       for (int j=0; j<n; j++)
-        obj[i] += to_int(c[j])*basis[j][i];
+        obj[i] += double2int(c[j])*basis[j][i];
   }
 
   obj[n-m]=0;
   for (int j=0; j<n; j++)
-    obj[n-m]+=to_int(c[j])*x0[j];
-  obj[n-m]+=to_int(c[n]);
+    obj[n-m]+=double2int(c[j])*x0[j];
+  obj[n-m]+=double2int(c[n]);
 
   return obj;
 }
@@ -901,18 +927,19 @@ SCIP_DECL_EVENTDELETE(EventhdlrReformulate::scip_delete)
 SCIP_DECL_EVENTEXEC(EventhdlrReformulate::scip_exec)
 {  /*lint --e{715}*/
 
+  /* read problem data */
   mat_ZZ Aext;
   bool maximization;
   vector<double> objfun(10000, 0.0);
   vector<double> upper(10000, SCIPinfinity(scip));
   vector<double> lower(10000, -SCIPinfinity(scip));
   SCIP_CALL( GetInstanceData(scip, Aext, upper, lower, objfun, maximization) );
-
   int m = Aext.NumRows();
   int n = Aext.NumCols() - 1;
   SCIPinfoMessage(scip, NULL, "Shape of Aext: (%d,%d) \n", m,n+1);
 
-  // Save matrix //
+
+  /* save matrix */
   bool save_mat = FALSE;
   if (save_mat)
   {
@@ -949,7 +976,7 @@ SCIP_DECL_EVENTEXEC(EventhdlrReformulate::scip_exec)
     for (int i=0;i<n;i++)
     {
       for (int j=0;j<n-m;j++)
-        output_file2 << Q[i][j] << " ";
+        output_file2 << -Q[i][j] << " ";
       output_file2 << "\n";
     }
     for (int j=0;j<n;j++)
