@@ -247,7 +247,7 @@ SCIP_RETCODE GetInstanceData(
     returned by SCIPvarGetObj will have opposite sign. The variable
     s corrects for this.
   */
-  double s = 1.0;
+  SCIP_Real objscale = SCIPgetTransObjscale(scip);
   SCIP_OBJSENSE objsense = SCIPgetObjsense(scip);
   if ( objsense == SCIP_OBJSENSE_MINIMIZE )
   {
@@ -256,17 +256,17 @@ SCIP_RETCODE GetInstanceData(
   else
   {
     maximization = TRUE;
-    s = -1.0;
+    objscale *= -1.0;
   }
   objfun.resize(n2+1); upper.resize(n2); lower.resize(n2);
   for (int i = 0; i < n; ++i)
   {
     	int col = idx2col[ SCIPvarGetIndex(allvars[i]) ] ;
-      objfun[col] = s*SCIPvarGetObj(allvars[i]);
+      objfun[col] = objscale*SCIPvarGetObj(allvars[i]);
       upper[col] = SCIPvarGetUbLocal(allvars[i]);
       lower[col] = SCIPvarGetLbLocal(allvars[i]);
   }
-  objfun[n2] = SCIPgetTransObjoffset(scip);
+  objfun[n2] = objscale*SCIPgetTransObjoffset(scip);
   for (int i = n; i < n2; ++i) { lower[i] = 0; }
 
 
@@ -454,7 +454,7 @@ SCIP_RETCODE get_new_varbounds(
                                      n) );
     // solve //
     SCIP_RETCODE retcode = SCIPsolve(scip);
-    if ( SCIPgetStatus(scip) == SCIP_STATUS_UNBOUNDED )
+    if ( SCIPgetStatus(scip) == SCIP_STATUS_OPTIMAL )
     {
       assert( SCIPgetStatus(scip) == SCIP_STATUS_OPTIMAL );
       SCIP_SOL* sol = SCIPgetBestSol(scip);
