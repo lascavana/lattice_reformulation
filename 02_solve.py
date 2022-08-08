@@ -8,16 +8,25 @@ instances = glob.glob(f'benchmarks/{problem}/ahl_*.lp')
 result_file = f'results/{problem}.csv'
 
 formulations = ['ahl', 'orig']
-fieldnames = ['instance', 'seed', 'formulation', 'nnodes', 'time', 'status']
+fieldnames = ['instance', 'seed', 'formulation', 'nnodes', 'time', 'status', 'gap']
 
 
 ## CREATE SCIP MODEL ##
 tol = 1e-6
+isolate = False
 scip_parameters = {'limits/time': 3600,
                    'timing/clocktype': 1,
                    'numerics/feastol': tol,
                    'display/verblevel': 0}
-
+if isolate:
+    scip_parameters.update(
+        {'separating/maxroundsroot': 0,
+         'separating/maxrounds': 0,
+         'conflict/enable': FALSE,
+         'conflict/useprop': FALSE,
+         'presolving/maxrestarts': 0,
+         'reoptimization/strongbranchinginit': FALSE}
+    )
 m = pyscipopt.Model()
 
 
@@ -49,9 +58,10 @@ with open(result_file, 'w', newline='') as csvfile:
                 m.optimize()
 
                 print("... solved")
-                results['nnodes'] = m.getNNodes()
+                results['nnodes'] = m.getNTotalNodes()
                 results['time'] = m.getSolvingTime()
                 results['status'] = m.getStatus()
+                results['gap'] = m.getGap()
                 print(results)
 
                 if m.getStatus() == 'optimal':
