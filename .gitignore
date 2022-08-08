@@ -1,3 +1,7 @@
+# This project
+/benchmarks
+/results
+
 # Mac
 .DS_Store
 *.dSYM
