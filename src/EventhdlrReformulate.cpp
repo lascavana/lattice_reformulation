@@ -1001,30 +1001,30 @@ SCIP_DECL_EVENTEXEC(EventhdlrReformulate::scip_exec)
   }
 
 
-  // get tranlation of Q //
+  // /* get tranlation of Q */
   // long ret;
-  // vec_ZZ x, e_i;
+  // vec_ZZ y, e_i;
   // mat_ZZ branchmat, test_matrix;
   // branchmat.SetDims(n-m,n);
-  // x.SetLength(n);
+  // y.SetLength(n);
   // e_i.SetLength(n-m);
-  //
+  
   // for (int i=0;i<n-m;i++)
   // {
   //   for (int j=0;j<n-m;j++) e_i[j] = 0;
   //   e_i[i] = to_ZZ(1);
-  //   ret = LatticeSolve(x, Q, e_i, 1);
+  //   ret = LatticeSolve(y, Q, e_i, 1);
   //   assert(ret);
   //   for (int j=0;j<n;j++)
   //   {
-  //     branchmat[i][j] = x[j];
+  //     branchmat[i][j] = y[j];
   //   }
   // }
-  //
+  
   // mul(test_matrix, branchmat, Q);
   // long flag = IsIdent(test_matrix, n-m);
   // assert(flag);
-  //
+  
   // ofstream output_file3("W_matrix.txt");
   // for (int i=0;i<n-m;i++)
   // {
