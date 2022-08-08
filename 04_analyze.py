@@ -60,16 +60,16 @@ def box_plot(ax, data, edge_color, fill_color):
 
     return bp
 
+csv_file = "results/results_mknapsack_nontrans.csv"
+txt_file = "results/determinants_mknapsack.txt"
 
-MIPLIB_table()
-assert 0
-data = pd.read_csv("results/results_mknapsack_nontrans.csv")
+
+# Read csv file #
 results = {}
-
+data = pd.read_csv(csv_file)
 instances = set(data['instance'])
 seeds = set(data['seed'])
 formulations = set(data['formulation'])
-
 for instance in instances:
     i_data = data.loc[data['instance'] == instance]
     nnodes = {'nnodes_ahl':[], 'nnodes_orig': []}
@@ -89,34 +89,49 @@ for instance in instances:
                          'nnodes_orig': nnodes['nnodes_orig']}
 
 
+# Read determinants file #
+determinants = {}
+with open(txt_file) as f:
+    lines = f.readlines()
+for line in lines:
+    line = line.split(' ')
+    name = line[0]
+    determ = float(line[1][:-1])
+    
+    instance = name[:-9].split('/')[-1]
+    determinants[instance] =  determ
 
+
+# Re-order instances #
 orig_mean = [results[instance]['nnodes_orig_mean'] for instance in instances]
 ind = np.argsort(orig_mean)
-
 orig = [results[instance]['nnodes_orig'] for instance in instances]
 ahl = [results[instance]['nnodes_ahl'] for instance in instances]
 determinants = [determinants[instance] for instance in instances]
 orig = [orig[j] for j in ind]
 ahl = [ahl[j] for j in ind]
 determinants = [determinants[j] for j in ind]
-print(determinants)
 
-fig, ax = plt.subplots()
 
 # Creating plot
+fig, ax = plt.subplots()
 bp1 = box_plot(ax, orig, 'red', (1, 0, 0, .3))
 bp2 = box_plot(ax, ahl, 'blue', (0, 0, 1, .3))
 ax.legend([bp1["boxes"][0], bp2["boxes"][0]], ['Original', 'Reformulated'])
 
 # show plot
-plt.title('Multiple knapsack')
-plt.xticks([])
-plt.xlabel('Instance')
-plt.yscale('log')
-plt.ylabel('Number of nodes')
+ax.set_title('Multiple knapsack')
+ax.set_xticks([])
+ax.set_xlabel('Instance')
+ax.set_yscale('log')
+ax.set_ylabel('Number of nodes')
 plt.show()
 
-
+# plot determinants 
+fig, ax = plt.subplots()
+determinants = np.array(determinants) - np.amin(determinants)
+ax.bar(np.arange(len(determinants)), determinants)
+plt.show()
 
 
 ## Same but with time ##

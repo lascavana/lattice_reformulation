@@ -994,10 +994,10 @@ SCIP_DECL_EVENTEXEC(EventhdlrReformulate::scip_exec)
   }
   if (write_determ)
   {
-    fstream log;
-    log.open("determinants.txt", fstream::app);
-    log << instancepath << " " << determ << "\n";
-    log.close();
+    fstream file;
+    file.open("determinants.txt", fstream::app);
+    file << instancepath << " " << log(determ) << "\n";
+    file.close();
   }
 
 
