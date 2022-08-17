@@ -6,7 +6,7 @@
 #include "objscip/objconshdlr.h"
 #include "objscip/objscipdefplugins.h"
 
-#include "EventhdlrReformulate.hpp"
+#include "Eventhdlr.hpp"
 
 using namespace scip;
 
@@ -114,7 +114,8 @@ SCIP_RETCODE runSCIP(
    SCIPprintVersion(scip, NULL);
    std::cout << std::endl;
 
-   EventhdlrReformulate Eventhdlr(scip, argv[1]);
+   //Eventhdlr_AHL Eventhdlr(scip, argv[1]);
+   Eventhdlr_Pataki Eventhdlr(scip, argv[1]);
    SCIP_CALL( SCIPincludeObjEventhdlr(scip, &Eventhdlr, FALSE) );
 
    /* include default SCIP plugins */

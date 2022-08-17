@@ -26,5 +26,7 @@ include_directories(${SCIP_INCLUDE_DIRS})
 ### EXECUTABLE ###
 add_executable(reformulate
    src/main.cpp
-   src/EventhdlrReformulate.cpp)
+   Src/utils.cpp
+   src/Eventhdlr_AHL.cpp
+   src/Eventhdlr_Pataki.cpp)
 target_link_libraries(reformulate ${NTL_LIBRARY} ${GMP_LIBRARIES} ${M_LIB} ${SCIP_LIBRARIES} ${SCIP_LIB})
