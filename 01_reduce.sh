@@ -11,15 +11,20 @@ cd ..
 #   ./build/reformulate benchmarks/marksplit/instance_${i}.lp settingsfile.set
 # done
 
-for i in {1..5}
-do
-  ./build/reformulate benchmarks/cuww/instance_${i}.lp settingsfile.set
-done
-
 # for i in {1..5}
 # do
-#   ./build/reformulate benchmarks/prob/prob${i}.lp settingsfile.set
+#   ./build/reformulate benchmarks/cuww/instance_${i}.lp settingsfile.set
 # done
+
+# for i in {1..10}
+# do
+#   ./build/reformulate benchmarks/prob_struct/prob${i}.lp settingsfile.set
+# done
+
+for i in {11..20}
+do
+  ./build/reformulate benchmarks/prob_nostruct/prob${i}.lp settingsfile.set
+done
 
 # for i in {1..50}
 # do

@@ -393,7 +393,7 @@ void print_pataki(
   SCIP_RETCODE retcode = get_new_varbounds(A, lhs, rhs, newupper, newlower);
 
   /* write objective function */
-  output_file << "minimize +1 \n";
+  output_file << "maximize +1 \n";
 
   int conss_counter = 0;
   output_file << "subject to" << "\n";
@@ -401,9 +401,8 @@ void print_pataki(
   /* write constraints */
   for (int i=0; i<m; i++)
   {
-    if (lhs[i] < -1e15) continue;
+    if (lhs[i] < -1e9) continue;
 
-    int k = 0;
     conss_counter++;
     output_file << "C" << conss_counter << ": ";
     for (int j=0; j<n; j++)
@@ -412,13 +411,12 @@ void print_pataki(
       {
         if (A[i][j] > 0)
         {
-          output_file << "+"<<A[i][j]<<" k"<<i+1<<" ";
+          output_file << "+"<<A[i][j]<<" k"<<j+1<<" ";
         }
         else
         {
-          output_file << A[i][j]<<" k"<<i+1<<" ";
+          output_file << A[i][j]<<" k"<<j+1<<" ";
         }
-        k++;
       }
     }
     output_file << " >= ";
@@ -427,9 +425,8 @@ void print_pataki(
   }
   for (int i=0; i<m; i++)
   {
-    if (rhs[i] > 1e15) continue;
+    if (rhs[i] > 1e9) continue;
 
-    int k = 0;
     conss_counter++;
     output_file << "C" << conss_counter << ": ";
     for (int j=0; j<n; j++)
@@ -438,13 +435,12 @@ void print_pataki(
       {
         if (A[i][j] > 0)
         {
-          output_file << "+"<<A[i][j]<<" k"<<i+1<<" ";
+          output_file << "+"<<A[i][j]<<" k"<<j+1<<" ";
         }
         else
         {
-          output_file << A[i][j]<<" k"<<i+1<<" ";
+          output_file << A[i][j]<<" k"<<j+1<<" ";
         }
-        k++;
       }
     }
     output_file << " <= ";
@@ -456,7 +452,7 @@ void print_pataki(
   output_file << "Bounds\n";
   for (int i=0; i<n; i++)
   {
-    if (newlower[i]<-1e15)
+    if (newlower[i]<-1e10)
     {
       output_file << "-inf";
     }
@@ -465,7 +461,7 @@ void print_pataki(
       output_file << newlower[i];
     }
     output_file << "<= k" << i+1 << "<=";
-    if (newupper[i]>1e15)
+    if (newupper[i]>1e10)
     {
       output_file << "inf" << "\n";
     }

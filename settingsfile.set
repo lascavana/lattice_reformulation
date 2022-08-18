@@ -1,5 +1,6 @@
 display/verblevel = 0
 estimation/restarts/restartpolicy = n
+presolving/maxrounds = 0
 presolving/maxrestarts = 0
 separating/maxroundsroot = 0
 separating/maxrounds = 0

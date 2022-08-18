@@ -1,32 +1,25 @@
 import csv
-import glob
 import pyscipopt
 import numpy as np
 
-problem = 'MIPLIB_subset'
-instances = glob.glob(f'benchmarks/{problem}/ahl_*.lp')
-result_file = f'results/{problem}.csv'
 
-formulations = ['ahl', 'orig']
+n_instances = 5
+problem = 'cuww'
+result_file = f'results/{problem}.csv'
+instance_path = f'benchmarks/{problem}'
+
+formulations = ['ahl', 'orig', 'ahl*', 'pataki']
 fieldnames = ['instance', 'seed', 'formulation', 'nnodes', 'time', 'status', 'gap']
 
 
 ## CREATE SCIP MODEL ##
-tol = 1e-6
-isolate = False
+tol = 1e-8
 scip_parameters = {'limits/time': 3600,
+                   'limits/memory': 4000,
                    'timing/clocktype': 1,
                    'numerics/feastol': tol,
                    'display/verblevel': 0}
-if isolate:
-    scip_parameters.update(
-        {'separating/maxroundsroot': 0,
-         'separating/maxrounds': 0,
-         'conflict/enable': FALSE,
-         'conflict/useprop': FALSE,
-         'presolving/maxrestarts': 0,
-         'reoptimization/strongbranchinginit': FALSE}
-    )
+
 m = pyscipopt.Model()
 
 
@@ -35,23 +28,25 @@ with open(result_file, 'w', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
 
-    for instance in instances:
+    for i in range(n_instances):
         optimalsol = None
-        name = instance.split('/')[-1].split('ahl_')[-1].split('.')[0]
-
         for seed in range(4):
-            print(f"~~ Instance {instance}, seed {seed}")
+            print(f"~~ Instance {i+1}, seed {seed}")
             for formulation in formulations:
                 print(f"    Formulation {formulation}")
-                results = {'instance': name,
+                name = f'instance_{i+1}.lp'
+                if formulation == "ahl": 
+                    name = f'ahl_instance_{i+1}.lp'
+                else if formulation == "ahl*": 
+                    name = f'regahl_instance_{i+1}.lp'
+                else if formulation == "pataki": 
+                    name = f'pat_instance_{i+1}.lp'
+                results = {'instance': f'instance_{i+1}',
                            'formulation': formulation,
                            'seed': seed }
-                
-                if formulation == "ahl": 
-                    m.readProblem(instance)
-                else:
-                    m.readProblem(instance.replace("ahl_", "").replace(".lp",".mps"))
 
+
+                m.readProblem(f'{instance_path}/{name}')
                 m.setParam('randomization/permutationseed', seed)
                 m.setParams(scip_parameters)
 

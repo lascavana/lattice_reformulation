@@ -60,7 +60,7 @@ def box_plot(ax, data, edge_color, fill_color):
 
     return bp
 
-csv_file = "results/results_mknapsack_nontrans.csv"
+csv_file = "results/prob_nostruct.csv"
 txt_file = "results/determinants_mknapsack.txt"
 
 
@@ -72,36 +72,35 @@ seeds = set(data['seed'])
 formulations = set(data['formulation'])
 for instance in instances:
     i_data = data.loc[data['instance'] == instance]
-    nnodes = {'nnodes_ahl':[], 'nnodes_orig': []}
+    nnodes = {}
+    for formulation in formulations:
+        nnodes[f'nnodes_{formulation}'] = []
     for seed in seeds:
         is_data = i_data.loc[i_data['seed'] == seed]
         for formulation in formulations:
             isf_data = is_data.loc[is_data['formulation'] == formulation]
             nnodes[f'nnodes_{formulation}'].append((isf_data['nnodes'].values[0]))
 
-    results[instance] = {'nnodes_ahl_mean': np.mean(nnodes['nnodes_ahl']),
-                         'nnodes_orig_mean': np.mean(nnodes['nnodes_orig']),
-                         'nnodes_ahl_gmean': gmean(nnodes['nnodes_ahl']),
-                         'nnodes_orig_gmean': gmean(nnodes['nnodes_orig']),
-                         'nnodes_ahl_std': np.std(nnodes['nnodes_ahl']),
-                         'nnodes_orig_std': np.std(nnodes['nnodes_orig']),
-                         'nnodes_ahl': nnodes['nnodes_ahl'],
-                         'nnodes_orig': nnodes['nnodes_orig']}
+    results[instance] = {}
+    for fo in formulations:
+        results[instance][f'nnodes_{fo}_mean'] = np.mean(nnodes[f'nnodes_{fo}'])
+        results[instance][f'nnodes_{fo}_gmean'] = gmean(nnodes[f'nnodes_{fo}'])
+        results[instance][f'nnodes_{fo}_std'] = np.std(nnodes[f'nnodes_{fo}'])
+        results[instance][f'nnodes_{fo}'] = nnodes[f'nnodes_{fo}']
 
 
-# Read determinants file #
-determinants = {}
-with open(txt_file) as f:
-    lines = f.readlines()
-for line in lines:
-    line = line.split(' ')
-    name = line[0]
-    determ = float(line[1][:-1])
-    
-    instance = name[:-9].split('/')[-1]
-    determinants[instance] =  determ
+formulations = ['orig', 'ahl', 'ahl*', 'pataki']
+s = f"              "
+for fo in formulations:
+    s += f"{fo}  "
+print(s)
+for instance in instances:
+    s = f"{instance} "
+    for fo in formulations:
+        s += f"{results[instance][f'nnodes_{fo}_gmean']:.2f}  "
+    print(s)
 
-
+assert 0
 # Re-order instances #
 orig_mean = [results[instance]['nnodes_orig_mean'] for instance in instances]
 ind = np.argsort(orig_mean)
