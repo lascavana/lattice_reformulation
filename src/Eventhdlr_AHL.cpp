@@ -469,7 +469,7 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_AHL::scip_exec)
 
 
   /* regularize */
-  bool regularize = true;
+  bool regularize = false;
   if (regularize)
   {
     assert(m==1);

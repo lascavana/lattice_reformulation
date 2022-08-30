@@ -32,7 +32,7 @@ SCIP_RETCODE GetInstanceData(
   vector<int> &rhs,
   vector<int> &upper,
   vector<int> &lower,
-  vector<double> &objfun,
+  vector<int> &objfun,
   bool &maximization
 )
 {
@@ -130,11 +130,11 @@ SCIP_RETCODE GetInstanceData(
   for (int i = 0; i < n; ++i)
   {
     	int col = idx2col[ SCIPvarGetIndex(allvars[i]) ] ;
-      objfun[col] = objscale*SCIPvarGetObj(allvars[i]);
+      objfun[col] = double2int(objscale*SCIPvarGetObj(allvars[i]));
       upper[col] = double2int(SCIPvarGetUbLocal(allvars[i]));
       lower[col] = double2int(SCIPvarGetLbLocal(allvars[i]));
   }
-  objfun[n] = objscale*SCIPgetTransObjoffset(scip);
+  objfun[n] = double2int(objscale*SCIPgetTransObjoffset(scip));
   for (int i = n; i < n; ++i) { lower[i] = 0; }
 
 
@@ -156,7 +156,7 @@ void extend_mat(
   int ncons = m;
   for (int j=0; j<n; j++)
   {
-    if (lower[j] > -1e15 || upper[j] < 1e15) ncons++;
+    if (lower[j] > -1e9 || upper[j] < 1e9) ncons++;
   }
 
   /* initialize matrix */
@@ -189,14 +189,15 @@ void extend_mat(
 
 /* reduction */
 mat_ZZ reduce_pataki(
-  mat_ZZ A
+  const mat_ZZ &A,
+  mat_ZZ &U
 )
 {
   mat_ZZ Atrans;
   transpose(Atrans, A);
 
   /* reduce */
-  ZZ determ; mat_ZZ U;
+  ZZ determ;
   LLL(determ, Atrans, U, 99, 100, 0);
 
   /* transpose matrix */
@@ -206,6 +207,23 @@ mat_ZZ reduce_pataki(
   return Ared;
 }
 
+void transform_obj(
+  vector<int> &objfun,
+  const mat_ZZ &U
+)
+{
+  int n = objfun.size() - 1;
+  vector<int> old_objfun = objfun;
+
+  for (int j=0; j<n; j++)
+  {
+    objfun[j] = 0;
+    for (int i=0; i<n; i++)
+    {
+      objfun[j] += old_objfun[i]*conv<int>(U[j][i]);
+    }   
+  }
+}
 
 /* get filename of reformulated instance */
 string get_new_filename(
@@ -379,7 +397,7 @@ void print_pataki(
   matrix A,
   vector<int> lhs,
   vector<int> rhs,
-  vector<double> objfun,
+  vector<int> objfun,
   bool maximization
 )
 {
@@ -393,7 +411,25 @@ void print_pataki(
   SCIP_RETCODE retcode = get_new_varbounds(A, lhs, rhs, newupper, newlower);
 
   /* write objective function */
-  output_file << "maximize +1 \n";
+  if (maximization) { output_file << "maximize "; }
+  else { output_file << "minimize "; }
+  for (int j=0; j<n; j++)
+  {
+    if (objfun[j] != 0)
+    {
+      if (objfun[j]>0)
+      {
+        output_file << "+"<<objfun[j]<<" k"<<j+1<< " ";
+      }
+      else
+      {
+        output_file << objfun[j]<<" k"<<j+1<< " ";
+      }
+    }
+  }
+  if (objfun[n] > 0) output_file << "+ " << objfun[n];
+  if (objfun[n] < 0) output_file << objfun[n];
+  output_file << "\n";
 
   int conss_counter = 0;
   output_file << "subject to" << "\n";
@@ -452,7 +488,7 @@ void print_pataki(
   output_file << "Bounds\n";
   for (int i=0; i<n; i++)
   {
-    if (newlower[i]<-1e10)
+    if (newlower[i]<-1e9)
     {
       output_file << "-inf";
     }
@@ -461,7 +497,7 @@ void print_pataki(
       output_file << newlower[i];
     }
     output_file << "<= k" << i+1 << "<=";
-    if (newupper[i]>1e10)
+    if (newupper[i]>1e9)
     {
       output_file << "inf" << "\n";
     }
@@ -555,7 +591,7 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_Pataki::scip_exec)
   /* read problem data */
   mat_ZZ A;
   bool maximization;
-  vector<double> objfun(10000, 0.0);
+  vector<int> objfun(10000, 0.0);
   vector<int> lhs(10000, SCIPinfinity(scip));
   vector<int> rhs(10000, SCIPinfinity(scip));
   vector<int> upper(10000, SCIPinfinity(scip));
@@ -569,18 +605,19 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_Pataki::scip_exec)
   m = A.NumRows();
 
   /* get reduced A */
-  mat_ZZ Apat = reduce_pataki(A);
+  mat_ZZ U;
+  mat_ZZ Apat = reduce_pataki(A, U);
+
+  /* get new objective function */
+  transform_obj(objfun, U);
 
   /* convert to int type */
   matrix basis(m, vector<int>(n, 0));
   for (int i=0;i<m;i++)
   {
     for (int j=0;j<n;j++)
-    {
       basis[i][j] = conv<int>(Apat[i][j]);
-      SCIPinfoMessage(scip, NULL, " %d",basis[i][j]);
-    }
-     SCIPinfoMessage(scip, NULL, " \n");
+
   }
 
   /* print the reformulated problem */

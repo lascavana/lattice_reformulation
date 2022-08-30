@@ -37,9 +37,9 @@ with open(result_file, 'w', newline='') as csvfile:
                 name = f'instance_{i+1}.lp'
                 if formulation == "ahl": 
                     name = f'ahl_instance_{i+1}.lp'
-                else if formulation == "ahl*": 
+                elif formulation == "ahl*": 
                     name = f'regahl_instance_{i+1}.lp'
-                else if formulation == "pataki": 
+                elif formulation == "pataki": 
                     name = f'pat_instance_{i+1}.lp'
                 results = {'instance': f'instance_{i+1}',
                            'formulation': formulation,
