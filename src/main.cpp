@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <string>
 
 // SCIP
 #include "objscip/objscip.h"
@@ -114,9 +115,23 @@ SCIP_RETCODE runSCIP(
    SCIPprintVersion(scip, NULL);
    std::cout << std::endl;
 
-   //Eventhdlr_AHL Eventhdlr(scip, argv[1]);
-   Eventhdlr_Pataki Eventhdlr(scip, argv[1]);
-   SCIP_CALL( SCIPincludeObjEventhdlr(scip, &Eventhdlr, FALSE) );
+   /* include the right event handler */
+   std::string strategy = argv[2];
+   Eventhdlr_AHL EventhdlrAHL(scip, argv[1]);
+   Eventhdlr_Pataki EventhdlrPataki(scip, argv[1]);
+   if (strategy == "ahl")
+   {
+      SCIP_CALL( SCIPincludeObjEventhdlr(scip, &EventhdlrAHL, FALSE) );
+   }
+   else if (strategy == "kc")
+   {
+      SCIP_CALL( SCIPincludeObjEventhdlr(scip, &EventhdlrPataki, FALSE) );
+   }
+   else
+   {
+      std::cout << "Invalid strategy. Choose among {ahl, kc}" << std::endl;
+      return SCIP_LPERROR;
+   }
 
    /* include default SCIP plugins */
    SCIP_CALL( SCIPincludeDefaultPlugins(scip) );
@@ -126,9 +141,9 @@ SCIP_RETCODE runSCIP(
     * Parameters *
     **************/
 
-   if( argc >= 3 )
+   if( argc >= 4 )
    {
-      SCIP_CALL( readParams(scip, argv[2]) );
+      SCIP_CALL( readParams(scip, argv[3]) );
    }
    else
    {
@@ -163,12 +178,17 @@ int main(
    )
 {
    /* print usage */
-   std::cout << " usage: project9 filename settingsfile" << std::endl;
+   std::cout << " usage: project9 filename strategy settingsfile" << std::endl;
 
    /* check usage */
    if( argc < 2 )
    {
      std::cout << " No file provided. Please enter a filename. " << std::endl;
+     return 1;
+   }
+   if( argc < 3 )
+   {
+     std::cout << " No strategy. Please choose a reformulation strategy. " << std::endl;
      return 1;
    }
 

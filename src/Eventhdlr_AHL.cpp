@@ -476,6 +476,18 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_AHL::scip_exec)
     Q = regularize_Q(Aext, Q);
   }
 
+  /* print Q */
+  bool print_Q = false; 
+  if (print_Q)
+  {
+    ofstream output_file2("Q.txt");
+    for (int i=0;i<n;i++)
+    {
+      for (int j=0;j<n-m;j++)
+        output_file2 << Q[i][j] << " ";
+      output_file2 << "\n";
+    }
+  }
 
   /* convert to int type */
   vector<int> x(n, 0);
