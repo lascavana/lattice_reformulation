@@ -60,7 +60,7 @@ def box_plot(ax, data, edge_color, fill_color):
 
     return bp
 
-csv_file = "results/mknapsack/mknapsack.csv"
+csv_file = "results/msplit_feasibility/msplit_feasibility.csv"
 txt_file = "results/determinants_mknapsack.txt"
 
 # read csv file #
@@ -71,7 +71,7 @@ seeds = set(data['seed'])
 formulations = set(data['formulation'])
 
 # read results according to metric of choice #
-metric = 'time'
+metric = 'nnodes'
 for instance in instances:
     i_data = data.loc[data['instance'] == instance]
     vals = {}
@@ -112,9 +112,9 @@ ind = np.argsort(orig_gmean)
 orig = [results[instance]['vals_orig'] for instance in instances]
 ahl = [results[instance]['vals_ahl'] for instance in instances]
 pataki = [results[instance]['vals_pataki'] for instance in instances]
-orig = [orig[j] for j in ind]
-ahl = [ahl[j] for j in ind]
-pataki = [pataki[j] for j in ind]
+# orig = [orig[j] for j in ind]
+# ahl = [ahl[j] for j in ind]
+# pataki = [pataki[j] for j in ind]
 
 
 # Creating plot
@@ -122,14 +122,16 @@ fig, ax = plt.subplots()
 bp1 = box_plot(ax, orig, 'red', (1, 0, 0, .3))
 bp2 = box_plot(ax, ahl, 'blue', (0, 0, 1, .3))
 bp3 = box_plot(ax, pataki, 'green', (0, 1, 0, .3))
-ax.legend([bp1["boxes"][0], bp2["boxes"][0], bp3["boxes"][0]], ['Original', 'AHL', 'Pataki'])
+ax.legend([bp1["boxes"][0], bp2["boxes"][0], bp3["boxes"][0]], ['Original', 'AHL', 'KP'])
 
 # show plot
-ax.set_title('Market split')
+fontsize = 20
+ax.set_title('Market split', fontsize=fontsize)
+ax.set_xlabel('Instance', fontsize=fontsize)
+ax.set_ylabel('Number of nodes', fontsize=fontsize)
 ax.set_xticks([])
-ax.set_xlabel('Instance')
 ax.set_yscale('log')
-ax.set_ylabel('Number of nodes')
 # ax.set_ylim([50,1e7])
-plt.show()
+# plt.show()
+plt.savefig('marketsplit.pdf')
 
