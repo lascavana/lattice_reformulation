@@ -10,6 +10,8 @@ class Eventhdlr_AHL : public scip::ObjEventhdlr
 public:
 
    char* instancepath;
+   bool highquality = true;
+   bool diag = false;
 
    /** default constructor */
    Eventhdlr_AHL(

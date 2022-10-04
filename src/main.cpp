@@ -123,13 +123,23 @@ SCIP_RETCODE runSCIP(
    {
       SCIP_CALL( SCIPincludeObjEventhdlr(scip, &EventhdlrAHL, FALSE) );
    }
-   else if (strategy == "kc")
+   else if (strategy == "ahl_diag")
+   {
+      EventhdlrAHL.diag = true;
+      SCIP_CALL( SCIPincludeObjEventhdlr(scip, &EventhdlrAHL, FALSE) );
+   }
+   else if (strategy == "ahl_poor")
+   {
+      EventhdlrAHL.highquality = false;
+      SCIP_CALL( SCIPincludeObjEventhdlr(scip, &EventhdlrAHL, FALSE) );
+   }
+   else if (strategy == "kp")
    {
       SCIP_CALL( SCIPincludeObjEventhdlr(scip, &EventhdlrPataki, FALSE) );
    }
    else
    {
-      std::cout << "Invalid strategy. Choose among {ahl, kc}" << std::endl;
+      std::cout << "Invalid strategy. Choose among {ahl, ahl_diag, ahl_poor, kp}" << std::endl;
       return SCIP_LPERROR;
    }
 

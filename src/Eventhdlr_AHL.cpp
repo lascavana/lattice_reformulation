@@ -245,7 +245,8 @@ void reduce_ahl(
   const mat_ZZ  &Aext,
   mat_ZZ        &Q,
   vec_ZZ        &x0,
-  ZZ            &determ
+  ZZ            &determ,
+  bool          highquality
 )
 {
   mat_ZZ L, U, X1, Atrans;
@@ -272,7 +273,15 @@ void reduce_ahl(
     L[n][n+i+1] = to_ZZ(-Aext[i][n])*(N2);
 
   /* lattice reduction */
-  LLL(determ, L, U, 99, 100, 0);
+  if (highquality)
+  {
+    LLL(determ, L, U, 99, 100, 0);
+  }
+  else
+  {
+    LLL(determ, L, U, 30, 100, 0);
+  }
+  
 
   /* find N1 in L matrix */
     /* Note: it should appear in position [n-p][n], where
@@ -348,6 +357,7 @@ mat_ZZ regularize_Q(
 /* get filename of reformulated instance */
 string get_new_filename(
   string path,
+  bool highquality,
   bool regularize
 )
 {
@@ -362,7 +372,11 @@ string get_new_filename(
   string filename;
   if (regularize)
   {
-    filename = dir + "/regahl_" + file + ".lp";
+    filename = dir + "/ahl_diag_" + file + ".lp";
+  }
+  else if (!highquality)
+  {
+    filename = dir + "/ahl_poor_" + file + ".lp";
   }
   else
   {
@@ -458,7 +472,7 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_AHL::scip_exec)
   SCIPinfoMessage(scip, NULL, "    reducing kernel basis\n");
   try
   {
-    reduce_ahl(Aext, Q, x0, determ);
+    reduce_ahl(Aext, Q, x0, determ, highquality);
   }
   catch (const std::runtime_error& e)
   {
@@ -469,8 +483,7 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_AHL::scip_exec)
 
 
   /* regularize */
-  bool regularize = false;
-  if (regularize)
+  if (diag)
   {
     assert(m==1);
     Q = regularize_Q(Aext, Q);
@@ -502,7 +515,7 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_AHL::scip_exec)
   }
 
   /* print the reformulated problem */
-  string filename = get_new_filename(instancepath, regularize);
+  string filename = get_new_filename(instancepath, highquality, diag);
   print_reformulation(scip, filename.c_str() , basis, x, upper, lower, objfun, maximization);
 
 

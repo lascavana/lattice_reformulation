@@ -8,7 +8,7 @@ problem = 'cuww'
 result_file = f'results/{problem}.csv'
 instance_path = f'benchmarks/{problem}'
 
-formulations = ['ahl', 'orig', 'ahl*', 'pataki']
+formulations = ['ahl', 'orig', 'ahl_diag', 'ahl_poor', 'pataki']
 fieldnames = ['instance', 'seed', 'formulation', 'nnodes', 'time', 'status', 'gap']
 
 
@@ -37,8 +37,10 @@ with open(result_file, 'w', newline='') as csvfile:
                 name = f'instance_{i+1}.lp'
                 if formulation == "ahl": 
                     name = f'ahl_instance_{i+1}.lp'
-                elif formulation == "ahl*": 
-                    name = f'regahl_instance_{i+1}.lp'
+                elif formulation == "ahl_diag": 
+                    name = f'ahl_diag_instance_{i+1}.lp'
+                elif formulation == "ahl_poor": 
+                    name = f'ahl_poor_instance_{i+1}.lp'
                 elif formulation == "pataki": 
                     name = f'pat_instance_{i+1}.lp'
                 results = {'instance': f'instance_{i+1}',
