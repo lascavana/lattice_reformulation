@@ -18,7 +18,8 @@ scip_parameters = {'limits/time': 3600,
                    'limits/memory': 4000,
                    'timing/clocktype': 1,
                    'numerics/feastol': tol,
-                   'display/verblevel': 0}
+                   'display/verblevel': 0,
+                   'randomization/permutevars': True}
 
 m = pyscipopt.Model()
 
@@ -50,6 +51,7 @@ with open(result_file, 'w', newline='') as csvfile:
 
                 m.readProblem(f'{instance_path}/{name}')
                 m.setParam('randomization/permutationseed', seed)
+                m.setParam('randomization/randomseedshift', seed)
                 m.setParams(scip_parameters)
 
                 m.optimize()
