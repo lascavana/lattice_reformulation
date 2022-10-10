@@ -60,7 +60,7 @@ def box_plot(ax, data, edge_color, fill_color):
 
     return bp
 
-csv_file = "results/msplit_feasibility/msplit_feasibility.csv"
+csv_file = "results/mknapsack/mknapsack.csv"
 txt_file = "results/determinants_mknapsack.txt"
 
 # read csv file #
@@ -93,7 +93,7 @@ for instance in instances:
 
 # print results per instance #
 if False:
-    formulations = ['orig', 'ahl', 'ahl*', 'pataki']
+    formulations = ['orig', 'ahl', 'ahl_diag', 'ahl_poor', 'pataki']
     s = f"              "
     for fo in formulations:
         s += f"{fo}  "
@@ -101,7 +101,7 @@ if False:
     for instance in instances:
         s = f"{instance} "
         for fo in formulations:
-            s += f"{results[instance][f'vals_{fo}_gmean']:.2f}  "
+            s += f"{results[instance][f'vals_{fo}_gmean']:.2f}  & & "
         print(s)
     assert 0
 
@@ -111,6 +111,7 @@ orig_gmean = [results[instance]['vals_orig_gmean'] for instance in instances]
 ind = np.argsort(orig_gmean)
 orig = [results[instance]['vals_orig'] for instance in instances]
 ahl = [results[instance]['vals_ahl'] for instance in instances]
+ahl_poor = [results[instance]['vals_ahl_poor'] for instance in instances]
 pataki = [results[instance]['vals_pataki'] for instance in instances]
 # orig = [orig[j] for j in ind]
 # ahl = [ahl[j] for j in ind]
@@ -122,16 +123,17 @@ fig, ax = plt.subplots()
 bp1 = box_plot(ax, orig, 'red', (1, 0, 0, .3))
 bp2 = box_plot(ax, ahl, 'blue', (0, 0, 1, .3))
 bp3 = box_plot(ax, pataki, 'green', (0, 1, 0, .3))
-ax.legend([bp1["boxes"][0], bp2["boxes"][0], bp3["boxes"][0]], ['Original', 'AHL', 'KP'])
+bp4 = box_plot(ax, ahl_poor, 'orange', (0.9, .8, .4, .3))
+ax.legend([bp1["boxes"][0], bp2["boxes"][0], bp4["boxes"][0], bp3["boxes"][0]], ['Original', 'AHL', 'AHL_low', 'KP'])
 
 # show plot
 fontsize = 20
-ax.set_title('Market split', fontsize=fontsize)
+ax.set_title('Multiple knapsack', fontsize=fontsize)
 ax.set_xlabel('Instance', fontsize=fontsize)
 ax.set_ylabel('Number of nodes', fontsize=fontsize)
 ax.set_xticks([])
 ax.set_yscale('log')
 # ax.set_ylim([50,1e7])
 # plt.show()
-plt.savefig('marketsplit.pdf')
+plt.savefig('mknapsack.pdf')
 
