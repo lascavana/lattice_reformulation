@@ -50,7 +50,7 @@ void nnegative_quad_transform(
   vector<double> &rhs,
   vector<int> &upper_bounds,
   vector<int> &lower_bounds,
-  vector<int> &obj
+  vector<double> &obj
 )
 {
   int n = basis.size();
@@ -109,8 +109,8 @@ void nnegative_quad_transform(
 /* get new variable bounds */
 SCIP_RETCODE get_new_varbounds(
   matrix basis,
-  vector<double> lhs,
-  vector<double> rhs,
+  vector<int> lhs,
+  vector<int> rhs,
   vector<int> &upper_bounds,
   vector<int> &lower_bounds
 )
@@ -255,7 +255,7 @@ SCIP_RETCODE get_new_varbounds(
 }
 
 /* get new objective function */
-vector<int> get_new_objfun(
+vector<double> get_new_objfun(
   matrix basis,
   vector<int> x0,
   vector<double> c)
@@ -263,20 +263,81 @@ vector<int> get_new_objfun(
   int n = basis.size();
   int m = n - basis[0].size();
 
-  vector<int> obj(n-m+1, 0);
+  vector<double> obj(n-m+1, 0);
 
   for (int i=0; i<(n-m); i++)
   {
       for (int j=0; j<n; j++)
-        obj[i] += double2int(c[j])*basis[j][i];
+        obj[i] += c[j]*conv<double>(basis[j][i]);
   }
 
   obj[n-m]=0;
   for (int j=0; j<n; j++)
-    obj[n-m]+=double2int(c[j])*x0[j];
-  obj[n-m]+=double2int(c[n]);
+    obj[n-m]+=c[j]*conv<double>(x0[j]);
+  obj[n-m]+=c[n];
 
   return obj;
+}
+
+void print_for_ls(
+  string filename,
+  matrix basis,
+  vector<int> lhs,
+  vector<int> rhs,
+  vector<int> upper,
+  vector<int> lower
+)
+{
+  int n = lhs.size();
+  int nvars = basis[0].size();
+
+  int nconss = 0;
+  for (int i=0;i<n;i++)
+  {
+    if (rhs[i]<=1e9) nconss++;
+    if (lhs[i]>=-1e9) nconss++;
+  }
+
+  ofstream output_file2(filename);
+  output_file2 << nvars << " " << nconss << endl;
+
+  /* write constraint matrix */
+  for (int i=0;i<n;i++)
+  {
+    if (rhs[i]>1e9) continue;
+    for (int j=nvars-1;j>-1;j--)
+      output_file2 << basis[i][j] << " ";
+    output_file2 << "\n";
+  }
+  for (int i=0;i<n;i++)
+  {
+    if (lhs[i]<-1e9) continue;
+    for (int j=nvars-1;j>-1;j--)
+      output_file2 << -basis[i][j] << " ";
+    output_file2 << "\n";
+  }
+
+  /* write b */
+  for (int i=0;i<n;i++) 
+  {
+    if (rhs[i]>1e9) continue;
+    output_file2 << rhs[i] << " ";
+  }
+  for (int i=0;i<n;i++) 
+  {
+    if (lhs[i]<-1e9) continue;
+    output_file2 << -lhs[i] << " ";
+  }
+  output_file2 << "\n";
+
+  /* write upper and lower bounds */
+  for (int j=nvars-1;j>-1;j--) output_file2 << lower[j] << " ";
+  output_file2 << "\n";
+  for (int j=nvars-1;j>-1;j--) output_file2 << upper[j] << " ";
+  output_file2 << "\n";
+
+  output_file2.close();
+
 }
 
 
@@ -299,14 +360,29 @@ void print_reformulation(
   int m = n - basis[0].size();
 
   /* get new objective function */
-  vector<int> obj = get_new_objfun(basis, x0, objfun);
+  vector<double> obj = get_new_objfun(basis, x0, objfun);
 
   /* get rhs and lhs of constraints */
-  vector<double> lhs, rhs;
+  vector<int> lhs, rhs;
   for (j = 0; j < n; j++)
   {
-    lhs.push_back( lower[j] - conv<double>(x0[j]) );
-    rhs.push_back( upper[j] - conv<double>(x0[j]) );
+    if (SCIPisInfinity(scip, -lower[j]))
+    {
+      lhs.push_back(-SCIPinfinity(scip));
+    }
+    else
+    {
+      lhs.push_back( conv<int>(lower[j]) - x0[j] );
+    }
+
+    if (SCIPisInfinity(scip, upper[j]))
+    {
+      rhs.push_back(SCIPinfinity(scip));
+    }
+    else
+    {
+      rhs.push_back( conv<int>(upper[j]) - x0[j] );
+    }
   }
 
   /* get bounds of new variables */
@@ -432,6 +508,8 @@ void print_reformulation(
   output_file << "\nEnd \n";
   output_file << "\n\n";
   output_file.close();
+
+  print_for_ls("LS.txt", basis, lhs, rhs, newupper, newlower);
 }
 
 

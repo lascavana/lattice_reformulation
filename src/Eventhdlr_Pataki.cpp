@@ -32,7 +32,7 @@ SCIP_RETCODE GetInstanceData(
   vector<int> &rhs,
   vector<int> &upper,
   vector<int> &lower,
-  vector<int> &objfun,
+  vector<double> &objfun,
   bool &maximization
 )
 {
@@ -130,11 +130,11 @@ SCIP_RETCODE GetInstanceData(
   for (int i = 0; i < n; ++i)
   {
     	int col = idx2col[ SCIPvarGetIndex(allvars[i]) ] ;
-      objfun[col] = double2int(objscale*SCIPvarGetObj(allvars[i]));
+      objfun[col] = objscale*SCIPvarGetObj(allvars[i]);
       upper[col] = double2int(SCIPvarGetUbLocal(allvars[i]));
       lower[col] = double2int(SCIPvarGetLbLocal(allvars[i]));
   }
-  objfun[n] = double2int(objscale*SCIPgetTransObjoffset(scip));
+  objfun[n] = objscale*SCIPgetTransObjoffset(scip);
   for (int i = n; i < n; ++i) { lower[i] = 0; }
 
 
@@ -208,19 +208,19 @@ mat_ZZ reduce_pataki(
 }
 
 void transform_obj(
-  vector<int> &objfun,
+  vector<double> &objfun,
   const mat_ZZ &U
 )
 {
   int n = objfun.size() - 1;
-  vector<int> old_objfun = objfun;
+  vector<double> old_objfun = objfun;
 
   for (int j=0; j<n; j++)
   {
-    objfun[j] = 0;
+    objfun[j] = 0.0;
     for (int i=0; i<n; i++)
     {
-      objfun[j] += old_objfun[i]*conv<int>(U[j][i]);
+      objfun[j] += old_objfun[i]*conv<double>(U[j][i]);
     }   
   }
 }
@@ -243,161 +243,13 @@ string get_new_filename(
   return filename;
 }
 
-/* get new variable bounds */
-SCIP_RETCODE get_new_varbounds(
-  matrix basis,
-  vector<int> lhs,
-  vector<int> rhs,
-  vector<int> &upper_bounds,
-  vector<int> &lower_bounds
-)
-{
-  int m = basis.size();
-  int n = basis[0].size();
-
-  SCIP* scip;
-  SCIPcreate(&scip);
-  SCIP_CALL( SCIPincludeDefaultPlugins(scip) ); /* include default plugins */
-  SCIP_CALL( SCIPcreateProbBasic(scip, "bounds") ); /* creating the SCIP Problem. */
-  SCIPsetIntParam(scip, "display/verblevel", 0); /* turn off terminal display */
-  SCIPenableReoptimization(scip, TRUE);
-
-
-  /* create n variables */
-  vector<SCIP_VAR*> xvars(n);
-  SCIP_Real inf = SCIPinfinity(scip);
-  for( int k = 0; k < n; ++k )
-  {
-    SCIP_VAR* var = nullptr;
-    string name = "x"+to_string(k+1);
-    SCIP_CALL( SCIPcreateVarBasic(
-                                   scip,                        /* SCIP environment */
-                                   &var,                        /* reference to the variable */
-                                   name.c_str(),                /* name of the variable */
-                                   -inf,                        /* lower bound of the variable */
-                                   inf,                         /* upper bound of the variable */
-                                   0.0,                         /* obj. coefficient. */
-                                   SCIP_VARTYPE_CONTINUOUS      /* variable is binary */
-                                   ) );
-    SCIP_CALL( SCIPaddVar(scip, var) );
-    xvars[k] = var;
-  }
-
-  /* create m constraints */
-  vector<SCIP_CONS*> constraints(m);
-  for( int k = 0; k < m; ++k )
-  {
-     SCIP_CONS* cons = nullptr;
-     string name = "C"+to_string(k+1);
-
-     int nvars = 0;
-     vector<double> vals;
-     vector<SCIP_VAR*> vars;
-     for( int j = 0; j < n; ++j )
-     {
-       if (basis[k][j] == 0) { continue; }
-       vals.push_back( conv<double>(basis[k][j]) );
-       vars.push_back( xvars[j] );
-       nvars++;
-     }
-
-     SCIP_CALL( SCIPcreateConsBasicLinear(
-                                           scip,
-                                           &cons,                 /* pointer to hold the created constraint */
-                                           name.c_str(),          /* name of constraint */
-                                           nvars,                 /* number of nonzeros in the constraint */
-                                           vars.data(),           /* array with variables of constraint entries */
-                                           vals.data(),           /* array with coefficients of constraint entries */
-                                           lhs[k],                /* left hand side of constraint */
-                                           rhs[k]) );             /* right hand side of constraint */
-
-     SCIP_CALL( SCIPaddCons(scip, cons) );
-     constraints[k] = cons;
-  }
-
-
-  /* get upper bounds */
-  for( int k = 0; k < n; ++k )
-  {
-    //SCIPinfoMessage(scip, NULL, "getting upper bound for var %d\n", k);
-    vector<SCIP_Real> objfun(n, 0.0);
-    objfun[k] = 1.0;
-    SCIP_CALL( SCIPchgReoptObjective(scip,
-                                     SCIP_OBJSENSE_MAXIMIZE,
-                                     xvars.data(),
-                                     objfun.data(),
-                                     n) );
-    // solve //
-    SCIP_RETCODE retcode = SCIPsolve(scip);
-    if ( SCIPgetStatus(scip) == SCIP_STATUS_OPTIMAL )
-    {
-      assert( SCIPgetStatus(scip) == SCIP_STATUS_OPTIMAL );
-      SCIP_SOL* sol = SCIPgetBestSol(scip);
-      SCIP_Real b = SCIPgetSolVal(scip, sol, xvars[k]);
-      upper_bounds.push_back( ceil(b) );
-    }
-    else
-    {
-      upper_bounds.push_back( SCIPinfinity(scip) );
-    }
-
-    // free //
-    SCIPfreeReoptSolve(scip);
-  }
-
-  /* get lower bounds */
-  for( int k = 0; k < n; ++k )
-  {
-    vector<SCIP_Real> objfun(n, 0.0);
-    objfun[k] = 1.0;
-    SCIP_CALL( SCIPchgReoptObjective(scip,
-                                     SCIP_OBJSENSE_MINIMIZE,
-                                     xvars.data(),
-                                     objfun.data(),
-                                     n) );
-    // solve //
-    SCIP_RETCODE retcode = SCIPsolve(scip);
-    if ( SCIPgetStatus(scip) == SCIP_STATUS_OPTIMAL )
-    {
-      assert( SCIPgetStatus(scip) == SCIP_STATUS_OPTIMAL );
-      SCIP_SOL* sol = SCIPgetBestSol(scip);
-      SCIP_Real b = SCIPgetSolVal(scip, sol, xvars[k]);
-      lower_bounds.push_back( floor(b) );
-    }
-    else
-    {
-      lower_bounds.push_back( -SCIPinfinity(scip) );
-    }
-
-    // free //
-    SCIPfreeReoptSolve(scip);
-  }
-
-  /* freeing the variables */
-  for( int k = 0; k < n; ++k )
-  {
-     SCIP_CALL( SCIPreleaseVar(scip, &xvars[k]) );
-  }
-  xvars.clear();
-
-  /* freeing the constraints */
-  for( auto &constr : constraints )
-  {
-     SCIP_CALL( SCIPreleaseCons(scip, &constr) );
-  }
-  constraints.clear();
-
-  SCIPfree(&scip);
-  return SCIP_OKAY;
-}
-
 void print_pataki(
   SCIP* scip,
   const char *filename,
   matrix A,
   vector<int> lhs,
   vector<int> rhs,
-  vector<int> objfun,
+  vector<double> objfun,
   bool maximization
 )
 {
@@ -517,6 +369,7 @@ void print_pataki(
     k++ ;
   }
 
+  print_for_ls("LS.txt", A, lhs, rhs, newupper, newlower);
 }
 
 
@@ -591,7 +444,7 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_Pataki::scip_exec)
   /* read problem data */
   mat_ZZ A;
   bool maximization;
-  vector<int> objfun(10000, 0.0);
+  vector<double> objfun(10000, 0.0);
   vector<int> lhs(10000, SCIPinfinity(scip));
   vector<int> rhs(10000, SCIPinfinity(scip));
   vector<int> upper(10000, SCIPinfinity(scip));

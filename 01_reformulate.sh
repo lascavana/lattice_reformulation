@@ -35,12 +35,19 @@ cd ..
 #   ./build/reformulate benchmarks/prob_nostruct/prob${i}.lp kp settingsfile.set
 # done
 
-for i in {1..50}
-do
-  ./build/reformulate benchmarks/mknapsack/instance_${i}_100_6.lp ahl settingsfile.set
-  ./build/reformulate benchmarks/mknapsack/instance_${i}_100_6.lp ahl_poor settingsfile.set
-  ./build/reformulate benchmarks/mknapsack/instance_${i}_100_6.lp kp settingsfile.set
-done
+# for i in {1..50}
+# do
+#   ./build/reformulate benchmarks/mknapsack/instance_${i}_100_6.lp ahl settingsfile.set
+#   ./build/reformulate benchmarks/mknapsack/instance_${i}_100_6.lp ahl_poor settingsfile.set
+#   ./build/reformulate benchmarks/mknapsack/instance_${i}_100_6.lp kp settingsfile.set
+# done
+
+# for i in {1..50}
+# do
+#   ./build/reformulate benchmarks/cauctions/instance_${i}.lp ahl settingsfile.set
+#   ./build/reformulate benchmarks/cauctions/instance_${i}.lp ahl_poor settingsfile.set
+#   ./build/reformulate benchmarks/cauctions/instance_${i}.lp kp settingsfile.set
+# done
 
 # for i in {1..50}
 # do
@@ -48,3 +55,5 @@ done
 #   ./build/reformulate benchmarks/msplit_feasibility/instance_${i}.lp ahl_poor settingsfile.set
 #   ./build/reformulate benchmarks/msplit_feasibility/instance_${i}.lp kp settingsfile.set
 # done
+
+

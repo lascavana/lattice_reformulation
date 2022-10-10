@@ -16,8 +16,8 @@ int double2int(double value);
 /* get new variable bounds */
 SCIP_RETCODE get_new_varbounds(
   std::vector<std::vector<int>> basis,
-  std::vector<double> lhs,
-  std::vector<double> rhs,
+  std::vector<int> lhs,
+  std::vector<int> rhs,
   std::vector<int> &upper_bounds,
   std::vector<int> &lower_bounds
 );
@@ -33,6 +33,14 @@ void print_reformulation(
   bool maximization
 );
 
+void print_for_ls(
+  std::string filename,
+  std::vector<std::vector<int>> basis,
+  std::vector<int> lhs,
+  std::vector<int> rhs,
+  std::vector<int> upper,
+  std::vector<int> lower
+);
 
 
 
