@@ -459,7 +459,11 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_Pataki::scip_exec)
 
   /* get reduced A */
   mat_ZZ U;
+  auto start = chrono::high_resolution_clock::now();
   mat_ZZ Apat = reduce_pataki(A, U);
+  auto end = chrono::high_resolution_clock::now();
+  auto duration = chrono::duration_cast<chrono::milliseconds>(end - start);
+  SCIPinfoMessage(scip, NULL, "    took %lld ms to reduce \n", duration.count());
 
   /* get new objective function */
   transform_obj(objfun, U);

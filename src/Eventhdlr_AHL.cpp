@@ -1,4 +1,5 @@
 #include <cmath>
+#include <chrono>
 #include <string>
 #include <vector>
 #include <cassert>
@@ -32,13 +33,13 @@ void check_basis(mat_ZZ Aext, mat_ZZ Q)
 
   // create non-extended version of matrix
   A.SetDims(m,n);
-    for (i = 0; i < m; i++)
-    {
-        for (j = 0; j < n; j++) A[i][j] = Aext[i][j];
-    }
+  for (i = 0; i < m; i++)
+  {
+      for (j = 0; j < n; j++) A[i][j] = Aext[i][j];
+  }
 
   mul(X, A, Q);
-  if (IsZero(X)) cout << "  Basis was correctly generated." << endl;
+  if (IsZero(X)) cout << "    basis was correctly generated." << endl;
   else
   {
     cout << "Error in reduction." << endl;
@@ -279,7 +280,7 @@ void reduce_ahl(
   }
   else
   {
-    LLL(determ, L, U, 30, 100, 0);
+    LLL(determ, L, U, 40, 100, 0);
   }
   
 
@@ -469,7 +470,8 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_AHL::scip_exec)
 
   /* get kernel basis */
   mat_ZZ Q; vec_ZZ x0; ZZ determ;
-  SCIPinfoMessage(scip, NULL, "    reducing kernel basis\n");
+  SCIPinfoMessage(scip, NULL, "    reducing kernel basis...\n");
+  auto start = chrono::high_resolution_clock::now();
   try
   {
     reduce_ahl(Aext, Q, x0, determ, highquality);
@@ -479,8 +481,12 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_AHL::scip_exec)
     cout << e.what() << endl;
     return SCIP_ERROR;
   }
-  m = n - Q.NumCols(); // update m. This is now the number of l.i. rows!
+  auto end = chrono::high_resolution_clock::now();
+  auto duration = chrono::duration_cast<chrono::milliseconds>(end - start);
+  SCIPinfoMessage(scip, NULL, "    took %lld ms to reduce \n", duration.count());
 
+  /* update m. This is now the number of l.i. rows! */
+  m = n - Q.NumCols(); 
 
   /* regularize */
   if (diag)
