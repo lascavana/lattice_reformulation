@@ -1,3 +1,7 @@
+## AHL / CEA reformulations
+
+Reads MILP parameters (A, b, c, u) and generates lp files for three problem formulations: original, [AHL](https://pubsonline.informs.org/doi/pdf/10.1287/moor.25.3.427.12219) and CEA.
+
 ### Requirements
 [NTL library](https://cs.uwaterloo.ca/~echrzano/tour-unix.html)
 
@@ -9,7 +13,7 @@ A -b
 c
 u
 ```
-where n is the number of variables, m is the number of constraints, A is the constraint matrix (m x n), b is the right-hand side (m), c is the objective function (n), and u is the vector containing the variable upper bounds (n).
+where n is the number of variables, m is the number of constraints, A is the constraint matrix (m x n), b is the right-hand side (m), c is the objective function (n), and u is the vector containing the variable upper bounds (n). The constrains are assumed to be in equality form, this is, Ax=b.
 
 ### Instructions
 run
