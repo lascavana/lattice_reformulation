@@ -21,5 +21,5 @@ l = 0
 u = 99
 rng = np.random.RandomState(seed=0)
 
-for k in range(50):
+for k in range(30):
     generate_markshare(f'instance_{k+1}.lp', m, l, u, rng)
