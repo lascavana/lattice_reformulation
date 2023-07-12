@@ -22,7 +22,7 @@ SCIP_RETCODE get_new_varbounds(
   std::vector<int> &lower_bounds
 );
 
-void print_reformulation(
+void print_ahl(
   SCIP* scip,
   const char *filename,
   std::vector<std::vector<int>> basis,
@@ -33,13 +33,14 @@ void print_reformulation(
   bool maximization
 );
 
-void print_for_ls(
-  std::string filename,
-  std::vector<std::vector<int>> basis,
+void print_pataki(
+  SCIP* scip,
+  const char *filename,
+  std::vector<std::vector<int>> A,
   std::vector<int> lhs,
   std::vector<int> rhs,
-  std::vector<int> upper,
-  std::vector<int> lower
+  std::vector<double> objfun,
+  bool maximization
 );
 
 

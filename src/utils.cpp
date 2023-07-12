@@ -342,7 +342,7 @@ void print_for_ls(
 
 
 /* print reformulation */
-void print_reformulation(
+void print_ahl(
   SCIP* scip,
   const char *filename,
   matrix basis,
@@ -387,13 +387,14 @@ void print_reformulation(
 
   /* get bounds of new variables */
   vector<int> newupper, newlower;
-  SCIPinfoMessage(scip, NULL, "   calculating bounds for new variables.\n");
+  SCIPinfoMessage(scip, NULL, "   ~ calculating bounds for new variables.\n\n");
   SCIP_RETCODE retcode = get_new_varbounds(basis, lhs, rhs, newupper, newlower);
 
   /* transform variables to nonnegative quadrant */
   //nnegative_quad_transform(scip, basis, lhs, rhs, newupper, newlower, obj);
 
   /* write objective function */
+  SCIPinfoMessage(scip, NULL, "   ~ writing lp file.\n");
   if (maximization) { output_file << "maximize "; }
   else { output_file << "minimize "; }
   for (j=0; j<(n-m); j++)
@@ -510,6 +511,136 @@ void print_reformulation(
   output_file.close();
 
   print_for_ls("LS.txt", basis, lhs, rhs, newupper, newlower);
+}
+
+
+void print_pataki(
+  SCIP* scip,
+  const char *filename,
+  matrix A,
+  vector<int> lhs,
+  vector<int> rhs,
+  vector<double> objfun,
+  bool maximization
+)
+{
+  ofstream output_file(filename);
+
+  int n = A[0].size();
+  int m = A.size();
+
+  /* get new variable bounds */
+  vector<int> newupper, newlower;
+  SCIP_RETCODE retcode = get_new_varbounds(A, lhs, rhs, newupper, newlower);
+
+  /* write objective function */
+  if (maximization) { output_file << "maximize "; }
+  else { output_file << "minimize "; }
+  for (int j=0; j<n; j++)
+  {
+    if (objfun[j] != 0)
+    {
+      if (objfun[j]>0)
+      {
+        output_file << "+"<<objfun[j]<<" k"<<j+1<< " ";
+      }
+      else
+      {
+        output_file << objfun[j]<<" k"<<j+1<< " ";
+      }
+    }
+  }
+  if (objfun[n] > 0) output_file << "+ " << objfun[n];
+  if (objfun[n] < 0) output_file << objfun[n];
+  output_file << "\n";
+
+  int conss_counter = 0;
+  output_file << "subject to" << "\n";
+
+  /* write constraints */
+  for (int i=0; i<m; i++)
+  {
+    if (lhs[i] < -1e9) continue;
+
+    conss_counter++;
+    output_file << "C" << conss_counter << ": ";
+    for (int j=0; j<n; j++)
+    {
+      if (A[i][j] != 0)
+      {
+        if (A[i][j] > 0)
+        {
+          output_file << "+"<<A[i][j]<<" k"<<j+1<<" ";
+        }
+        else
+        {
+          output_file << A[i][j]<<" k"<<j+1<<" ";
+        }
+      }
+    }
+    output_file << " >= ";
+    output_file << lhs[i] << "\n";
+
+  }
+  for (int i=0; i<m; i++)
+  {
+    if (rhs[i] > 1e9) continue;
+
+    conss_counter++;
+    output_file << "C" << conss_counter << ": ";
+    for (int j=0; j<n; j++)
+    {
+      if (A[i][j] != 0)
+      {
+        if (A[i][j] > 0)
+        {
+          output_file << "+"<<A[i][j]<<" k"<<j+1<<" ";
+        }
+        else
+        {
+          output_file << A[i][j]<<" k"<<j+1<<" ";
+        }
+      }
+    }
+    output_file << " <= ";
+    output_file << rhs[i] << "\n";
+
+  }
+
+  /* write variable bounds */
+  output_file << "Bounds\n";
+  for (int i=0; i<n; i++)
+  {
+    if (newlower[i]<-1e9)
+    {
+      output_file << "-inf";
+    }
+    else
+    {
+      output_file << newlower[i];
+    }
+    output_file << "<= k" << i+1 << "<=";
+    if (newupper[i]>1e9)
+    {
+      output_file << "inf" << "\n";
+    }
+    else
+    {
+      output_file << newupper[i] << "\n";
+    }
+  }
+
+  /* write variables */
+  int k = 0;
+  output_file << "Generals " << "\n";
+  for (int i=0; i<n; i++)
+  {
+    if (k>20){k=0; output_file << "\n";}
+    output_file << "k" << i+1 << " ";
+    k++ ;
+  }
+
+  print_for_ls("LS.txt", A, lhs, rhs, newupper, newlower);
 }
 
 

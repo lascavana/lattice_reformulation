@@ -61,16 +61,13 @@ SCIP_RETCODE fromCommandLine(
    int m = SCIPgetNConss(scip);
    int n = SCIPgetNVars(scip);
    std::cout << "Number of constraints: " << m << "\n";
-   std::cout << "Number of variables: " << n << "\n";
+   std::cout << "Number of variables: " << n << "\n\n";
 
 
    /*******************
     * Problem Solving *
     *******************/
 
-   /* solve problem */
-   std::cout << "solve problem" << std::endl;
-   std::cout << "=============" << std::endl;
    SCIP_CALL( SCIPsolve(scip) );
    std::cout << std::endl << "FINISHED" << std::endl;
    std::cout << "================" << std::endl << std::endl;

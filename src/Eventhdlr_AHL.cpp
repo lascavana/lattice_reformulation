@@ -59,7 +59,7 @@ SCIP_RETCODE GetInstanceData(
   bool &maximization
 )
 {
-  SCIPinfoMessage(scip, NULL, "    retreiving constraint matrix\n");
+  SCIPinfoMessage(scip, NULL, "    ~ retrieving constraint matrix...\n");
 
   /* check stage */
 	assert(scip != nullptr);
@@ -76,7 +76,6 @@ SCIP_RETCODE GetInstanceData(
   int m = SCIPgetNConss(scip);
   mat_ZZ Aext;
   Aext.SetDims(m,n+2); // Aext = [lhs|A|rhs]
-  SCIPinfoMessage(scip, NULL, "    Aext dim: (%d, %d)\n", m, n+2);
 
   /* assign var index to a matrix colum */
   unordered_map<int, int> idx2col;
@@ -156,7 +155,7 @@ SCIP_RETCODE GetInstanceData(
     SCIPfreeBufferArray(scip, &vals);
     SCIPfreeBufferArray(scip, &vars);
   }
-  SCIPinfoMessage(scip, NULL, "    Added %d slack variables ", n2-n);
+  SCIPinfoMessage(scip, NULL, "    added %d slack variables ", n2-n);
   SCIPinfoMessage(scip, NULL, "and %d constraints. \n", m2-m);
 
   /* post-process data and save into consmat */
@@ -483,12 +482,12 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_AHL::scip_exec)
   SCIP_CALL( GetInstanceData(scip, Aext, upper, lower, objfun, maximization) );
   int m = Aext.NumRows();
   int n = Aext.NumCols() - 1;
-  SCIPinfoMessage(scip, NULL, "Shape of Aext: (%d,%d) \n", m,n+1);
+  SCIPinfoMessage(scip, NULL, "    Aext dimensions: (%d, %d)\n\n", m, n+1);
 
 
   /* get kernel basis */
   mat_ZZ Q; vec_ZZ x0; ZZ determ;
-  SCIPinfoMessage(scip, NULL, "    reducing kernel basis...\n");
+  SCIPinfoMessage(scip, NULL, "    ~ reducing kernel basis...\n");
   auto start = chrono::high_resolution_clock::now();
   try
   {
@@ -501,7 +500,7 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_AHL::scip_exec)
   }
   auto end = chrono::high_resolution_clock::now();
   auto duration = chrono::duration_cast<chrono::milliseconds>(end - start);
-  SCIPinfoMessage(scip, NULL, "    took %lld ms to reduce \n", duration.count());
+  SCIPinfoMessage(scip, NULL, "    took %lld ms to reduce. \n\n", duration.count());
 
   /* update m. This is now the number of l.i. rows! */
   m = n - Q.NumCols(); 
@@ -510,6 +509,7 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_AHL::scip_exec)
   if (diag)
   {
     assert(m==1);
+    SCIPinfoMessage(scip, NULL, "    ~ regularizing kernel basis. \n\n");
     Q = regularize_Q(Aext, Q);
     get_volume_bound(Aext);
   }
@@ -541,7 +541,7 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_AHL::scip_exec)
 
   /* print the reformulated problem */
   string filename = get_new_filename(instancepath, highquality, diag);
-  print_reformulation(scip, filename.c_str() , basis, x, upper, lower, objfun, maximization);
+  print_ahl(scip, filename.c_str() , basis, x, upper, lower, objfun, maximization);
 
 
   SCIP_CALL( SCIPdropEvent( scip, SCIP_EVENTTYPE_NODEFOCUSED, eventhdlr, NULL, -1) );
