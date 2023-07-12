@@ -10,16 +10,21 @@ For running the experiments:
 * [SCIP](https://scipopt.org/#scipoptsuite)
 * A Python environment with [PySCIPOpt](https://github.com/scipopt/PySCIPOpt)
 
-
-## Step 1: generate the (original) instances
+## Instructions
+### Step 1: generate the (original) instances
 Code to generate the multi-row instances can be found under `benchmarks/<name>`. For the single-row instances, we provide the already generated instances under the same directory. The procedure to generate them from scratch is as follows: first, generate the constraint coefficients by running `benchmarks/single_row/generate_coefficients.py` (with the appropriate parameters). Then use the code provided in [this other repo](https://github.com/lascavana/FrobeniusNum) to generate the right-hand-side.
 
-## Step 2: reformulate the instances
+### Step 2: reformulate the instances
 Run `sh 01_reduce.sh` to compile the reformulation code and generate the reformulations of all instances. Make sure that the environment variable `SCIPOPTDIR` is correctly set to your SCIP installation path. Other than the instances, this process generates log files that are stored in the `log/` directory.
 
-## Step 3: solve
+### Step 3: solve
 To reproduce the experiments, run
 ```
 python 02_solve.py <name>
 ```
-where name is in `{struct_s, struct_b, nostruct_s, nostruct_b, ms, gap, ca}`. This will generate a csv file in the `results/` directory.
+where `<name>` is in `{struct_s, struct_b, nostruct_s, nostruct_b, ms, gap, ca}`. This will generate a csv file in the `results` directory.
+To analyze the results, run
+```
+python 03_analyze.py <name> <output>
+```
+with `<output>` being either `per_instance`, `aggregated` or `boxplot`.
