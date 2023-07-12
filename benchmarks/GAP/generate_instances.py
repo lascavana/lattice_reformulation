@@ -80,5 +80,5 @@ rng = np.random.RandomState(72)
 nitems = 100
 nknapsacks = 6
 for j in range(30):
-    filename = f'instance_{j+1}_{nitems}_{nknapsacks}.lp'
+    filename = f'instance_{j+1}.lp'
     generate_mknapsack(nitems, nknapsacks, filename, rng, min_range=10, max_range=20)
