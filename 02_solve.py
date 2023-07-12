@@ -1,3 +1,4 @@
+import os
 import csv
 import argparse
 import pyscipopt
@@ -10,9 +11,10 @@ if __name__ == "__main__":
     choices=['struct_s', 'struct_b', 'nostruct_s', 'nostruct_b', 'ms', 'gap', 'ca'],
   )
   args = parser.parse_args()
-
-  n_instances = 30
   problem = args.problem
+  n_instances = 30
+  
+  os.makedirs('results', exist_ok=True)
   result_file = f'results/{problem}.csv'
   instance_path = f'benchmarks/{problem}'
 

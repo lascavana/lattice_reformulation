@@ -18,4 +18,8 @@ Code to generate the multi-row instances can be found under `benchmarks/<name>`.
 Run `sh 01_reduce.sh` to compile the reformulation code and generate the reformulations of all instances. Make sure that the environment variable `SCIPOPTDIR` is correctly set to your SCIP installation path. Other than the instances, this process generates log files that are stored in the `log/` directory.
 
 ## Step 3: solve
-Blah
+To reproduce the experiments, run
+```
+python 02_solve.py <name>
+```
+where name is in `{struct_s, struct_b, nostruct_s, nostruct_b, ms, gap, ca}`. This will generate a csv file in the `results/` directory.
