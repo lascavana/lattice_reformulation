@@ -92,9 +92,10 @@ SCIP_RETCODE GetInstanceData(
   unsigned int success = TRUE;
   for (int i = 0; i < m; ++i)
   {
+    SCIP_CONS* cons = conss[i];
     /* get number of variables */
     int nvars;
-    SCIPgetConsNVars(scip, conss[i], &nvars, &success);
+    SCIPgetConsNVars(scip, cons, &nvars, &success);
     assert(success);
 
     /* get values and variables */
@@ -102,14 +103,14 @@ SCIP_RETCODE GetInstanceData(
     SCIP_Real* vals;
     SCIP_CALL( SCIPallocBufferArray(scip, &vars, nvars) );
     SCIP_CALL( SCIPallocBufferArray(scip, &vals, nvars) );
-    SCIP_CALL( SCIPgetConsVals(scip, conss[i], vals, nvars, &success) );
+    SCIP_CALL( SCIPgetConsVals(scip, cons, vals, nvars, &success) );
     assert(success);
-    SCIP_CALL( SCIPgetConsVars(scip, conss[i], vars, nvars, &success) );
+    SCIP_CALL( SCIPgetConsVars(scip, cons, vars, nvars, &success) );
     assert(success);
 
     /* get lhs and rhs */
-    SCIP_Real lhs = SCIPconsGetLhs(scip, conss[i], &success);
-    SCIP_Real rhs = SCIPconsGetRhs(scip, conss[i], &success);
+    SCIP_Real lhs = SCIPconsGetLhs(scip, cons, &success);
+    SCIP_Real rhs = SCIPconsGetRhs(scip, cons, &success);
 
     /* handle constraint */
     if (rhs-lhs > 0) // different
@@ -354,6 +355,23 @@ mat_ZZ regularize_Q(
   return Qnew;
 }
 
+void get_volume_bound(
+  mat_ZZ a
+)
+{
+  long m = a.NumRows();
+  long n = a.NumCols()-1;
+  assert(m==1);
+
+  double c = 1/0.74;
+
+  double f1 = (n-1)*(n-2)*log(3*sqrt(c)/2)/2 + (n-1)*log(2) - log(n)/2;
+  double f2 = (n-1)*log(conv<double>(a[0][n]));
+  for (int j=0; j<n; j++) f2 -= log(conv<double>(a[0][j]));
+
+  cout << "First term: " << f1 << endl;
+  cout << "Second term: " << f2 << endl;
+}
 
 /* get filename of reformulated instance */
 string get_new_filename(
@@ -493,6 +511,7 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_AHL::scip_exec)
   {
     assert(m==1);
     Q = regularize_Q(Aext, Q);
+    get_volume_bound(Aext);
   }
 
   /* print Q */
