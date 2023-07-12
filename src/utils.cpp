@@ -531,9 +531,11 @@ void print_pataki(
 
   /* get new variable bounds */
   vector<int> newupper, newlower;
+  SCIPinfoMessage(scip, NULL, "   ~ calculating bounds for new variables.\n\n");
   SCIP_RETCODE retcode = get_new_varbounds(A, lhs, rhs, newupper, newlower);
 
   /* write objective function */
+  SCIPinfoMessage(scip, NULL, "   ~ writing lp file.\n");
   if (maximization) { output_file << "maximize "; }
   else { output_file << "minimize "; }
   for (int j=0; j<n; j++)

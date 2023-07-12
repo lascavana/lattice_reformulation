@@ -36,7 +36,7 @@ SCIP_RETCODE GetInstanceData(
   bool &maximization
 )
 {
-  SCIPinfoMessage(scip, NULL, "    retreiving constraint matrix\n");
+  SCIPinfoMessage(scip, NULL, "    ~ retrieving constraint matrix...\n\n");
 
   /* check stage */
 	assert(scip != nullptr);
@@ -53,7 +53,6 @@ SCIP_RETCODE GetInstanceData(
   int m = SCIPgetNConss(scip);
   consmat.SetDims(m,n); // Aext = [lhs|A|rhs]
   lhs.resize(m); rhs.resize(m);
-  SCIPinfoMessage(scip, NULL, "    Aext dim: (%d, %d)\n", m, n);
 
   /* assign var index to a matrix colum */
   unordered_map<int, int> idx2col;
@@ -330,11 +329,12 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_Pataki::scip_exec)
 
   /* get reduced A */
   mat_ZZ U;
+  SCIPinfoMessage(scip, NULL, "    ~ reducing kernel basis...\n");
   auto start = chrono::high_resolution_clock::now();
   mat_ZZ Apat = reduce_pataki(A, U);
   auto end = chrono::high_resolution_clock::now();
   auto duration = chrono::duration_cast<chrono::milliseconds>(end - start);
-  SCIPinfoMessage(scip, NULL, "    took %lld ms to reduce \n", duration.count());
+  SCIPinfoMessage(scip, NULL, "    took %lld ms to reduce. \n\n", duration.count());
 
   /* get new objective function */
   transform_obj(objfun, U);
