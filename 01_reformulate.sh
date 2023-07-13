@@ -12,37 +12,37 @@ mkdir logs
 # struct_s
 for i in {1..30}
 do
-  ./build/reformulate benchmarks/struct_s/instance_${i}_n10_struct.lp ahl settingsfile.set >> logs/struct_s_ahl.txt
-  ./build/reformulate benchmarks/struct_s/instance_${i}_n10_struct.lp ahl_diag settingsfile.set >> logs/struct_s_ahl_diag.txt
-  ./build/reformulate benchmarks/struct_s/instance_${i}_n10_struct.lp ahl_poor settingsfile.set >> logs/struct_s_ahl_poor.txt
-  ./build/reformulate benchmarks/struct_s/instance_${i}_n10_struct.lp kp settingsfile.set >> logs/struct_s_kp.txt
+  ./build/reformulate benchmarks/struct_s/instance_${i}.lp ahl settingsfile.set >> logs/struct_s_ahl.txt
+  ./build/reformulate benchmarks/struct_s/instance_${i}.lp ahl_diag settingsfile.set >> logs/struct_s_ahl_diag.txt
+  ./build/reformulate benchmarks/struct_s/instance_${i}.lp ahl_poor settingsfile.set >> logs/struct_s_ahl_poor.txt
+  ./build/reformulate benchmarks/struct_s/instance_${i}.lp kp settingsfile.set >> logs/struct_s_kp.txt
 done
 
 # struct_b
 for i in {1..30}
 do
-  ./build/reformulate benchmarks/struct_b/instance_${i}_n100_struct.lp ahl settingsfile.set >> logs/struct_b_ahl.txt
-  ./build/reformulate benchmarks/struct_b/instance_${i}_n100_struct.lp ahl_diag settingsfile.set >> logs/struct_b_ahl_diag.txt
-  ./build/reformulate benchmarks/struct_b/instance_${i}_n100_struct.lp ahl_poor settingsfile.set >> logs/struct_b_ahl_poor.txt
-  ./build/reformulate benchmarks/struct_b/instance_${i}_n100_struct.lp kp settingsfile.set >> logs/struct_b_kp.txt
+  ./build/reformulate benchmarks/struct_b/instance_${i}.lp ahl settingsfile.set >> logs/struct_b_ahl.txt
+  ./build/reformulate benchmarks/struct_b/instance_${i}.lp ahl_diag settingsfile.set >> logs/struct_b_ahl_diag.txt
+  ./build/reformulate benchmarks/struct_b/instance_${i}.lp ahl_poor settingsfile.set >> logs/struct_b_ahl_poor.txt
+  ./build/reformulate benchmarks/struct_b/instance_${i}.lp kp settingsfile.set >> logs/struct_b_kp.txt
 done
 
 # nostruct_s
 for i in {1..30}
 do
-  ./build/reformulate benchmarks/nostruct_s/instance_${i}_n10_nostruct.lp ahl settingsfile.set >> logs/nostruct_s_ahl.txt
-  ./build/reformulate benchmarks/nostruct_s/instance_${i}_n10_nostruct.lp ahl_diag settingsfile.set >> logs/nostruct_s_ahl_diag.txt
-  ./build/reformulate benchmarks/nostruct_s/instance_${i}_n10_nostruct.lp ahl_poor settingsfile.set >> logs/nostruct_s_ahl_poor.txt
-  ./build/reformulate benchmarks/nostruct_s/instance_${i}_n10_nostruct.lp kp settingsfile.set >> logs/nostruct_s_kp.txt
+  ./build/reformulate benchmarks/nostruct_s/instance_${i}.lp ahl settingsfile.set >> logs/nostruct_s_ahl.txt
+  ./build/reformulate benchmarks/nostruct_s/instance_${i}.lp ahl_diag settingsfile.set >> logs/nostruct_s_ahl_diag.txt
+  ./build/reformulate benchmarks/nostruct_s/instance_${i}.lp ahl_poor settingsfile.set >> logs/nostruct_s_ahl_poor.txt
+  ./build/reformulate benchmarks/nostruct_s/instance_${i}.lp kp settingsfile.set >> logs/nostruct_s_kp.txt
 done
 
 # nostruct_b
 for i in {1..30}
 do
-  ./build/reformulate benchmarks/nostruct_s/instance_${i}_n100_nostruct.lp ahl settingsfile.set >> logs/nostruct_b_ahl.txt
-  ./build/reformulate benchmarks/nostruct_s/instance_${i}_n100_nostruct.lp ahl_diag settingsfile.set >> logs/nostruct_b_ahl_diag.txt
-  ./build/reformulate benchmarks/nostruct_s/instance_${i}_n100_nostruct.lp ahl_poor settingsfile.set >> logs/nostruct_b_ahl_poor.txt
-  ./build/reformulate benchmarks/nostruct_s/instance_${i}_n100_nostruct.lp kp settingsfile.set >> logs/nostruct_b_kp.txt
+  ./build/reformulate benchmarks/nostruct_s/instance_${i}.lp ahl settingsfile.set >> logs/nostruct_b_ahl.txt
+  ./build/reformulate benchmarks/nostruct_s/instance_${i}.lp ahl_diag settingsfile.set >> logs/nostruct_b_ahl_diag.txt
+  ./build/reformulate benchmarks/nostruct_s/instance_${i}.lp ahl_poor settingsfile.set >> logs/nostruct_b_ahl_poor.txt
+  ./build/reformulate benchmarks/nostruct_s/instance_${i}.lp kp settingsfile.set >> logs/nostruct_b_kp.txt
 done
 
 # Market split
@@ -56,9 +56,9 @@ done
 # Generalized assignment 
 for i in {1..30}
 do
-  ./build/reformulate benchmarks/GAP/instance_${i}_100_6.lp ahl settingsfile.set >> logs/gap_ahl.txt
-  ./build/reformulate benchmarks/GAP/instance_${i}_100_6.lp ahl_poor settingsfile.set >> logs/gap_ahl_poor.txt
-  ./build/reformulate benchmarks/GAP/instance_${i}_100_6.lp kp settingsfile.set >> logs/gap_kp.txt
+  ./build/reformulate benchmarks/GAP/instance_${i}.lp ahl settingsfile.set >> logs/gap_ahl.txt
+  ./build/reformulate benchmarks/GAP/instance_${i}.lp ahl_poor settingsfile.set >> logs/gap_ahl_poor.txt
+  ./build/reformulate benchmarks/GAP/instance_${i}.lp kp settingsfile.set >> logs/gap_kp.txt
 done
 
 # Combinatorial auctions
