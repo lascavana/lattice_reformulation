@@ -279,6 +279,52 @@ vector<double> get_new_objfun(
   return obj;
 }
 
+
+/* calculate volume bounds */
+void bound_volumes(
+  SCIP* scip,
+  const mat_ZZ &Aext,
+  const vector<double> &lower,
+  const vector<double> &upper,
+  const vector<int> &newlower,
+  const vector<int> &newupper
+)
+{
+  int m = Aext.NumRows();
+  int n = Aext.NumCols() - 1;
+  assert(m==1);
+
+  SCIPinfoMessage(scip, NULL, "    ~ calculating volume bounds. \n");
+
+  /* original formulation */
+  double logvol = 0.0;
+  for (int j=0;j<n;j++)
+  {
+    assert(lower[j] == 0.0);
+    double ub = upper[j];
+    double simplex = conv<double>(Aext[0][n]) / conv<double>(Aext[0][j]);
+    logvol += log( min(ub,simplex) );
+  }
+  SCIPinfoMessage(scip, NULL, "    original log volume: %g \n", logvol);
+
+  /* reformulation */
+  double logvol_ref = 0.0;
+  for (int j=0;j<n-m;j++)
+  {
+    assert(newupper[j] < 1e20);
+    assert(newlower[j] > -1e20);
+    logvol_ref += log(conv<double>(newupper[j] - newlower[j]));
+  }
+  SCIPinfoMessage(scip, NULL, "    reformulation log volume: %g \n", logvol_ref);
+
+  /* theoretical bound on volume */
+  double c = 1/0.74;
+  double f1 = (n-1)*(n-2)*log(3*sqrt(c)/2)/2;
+  double f2 = (n-1)*log(2) - log(n)/2 + (n-1)*log(conv<double>(Aext[0][n]));
+  for (int j=0; j<n; j++) f2 -= log(conv<double>(Aext[0][j]));
+  SCIPinfoMessage(scip, NULL, "    theoretical log volume: %g + %g \n\n", f1, f2);
+}
+
 void print_for_ls(
   string filename,
   matrix basis,
@@ -344,6 +390,7 @@ void print_for_ls(
 /* print reformulation */
 void print_ahl(
   SCIP* scip,
+  const mat_ZZ &Aext,
   const char *filename,
   matrix basis,
   vector<int> x0,
@@ -392,6 +439,12 @@ void print_ahl(
 
   /* transform variables to nonnegative quadrant */
   //nnegative_quad_transform(scip, basis, lhs, rhs, newupper, newlower, obj);
+
+  /* get volume bound (only single row) */
+  if (m==1)
+  {
+    bound_volumes(scip, Aext, lower, upper, newlower, newupper);
+  }
 
   /* write objective function */
   SCIPinfoMessage(scip, NULL, "   ~ writing lp file.\n");
@@ -521,7 +574,8 @@ void print_pataki(
   vector<int> lhs,
   vector<int> rhs,
   vector<double> objfun,
-  bool maximization
+  bool maximization,
+  bool singlerow
 )
 {
   ofstream output_file(filename);
@@ -533,6 +587,20 @@ void print_pataki(
   vector<int> newupper, newlower;
   SCIPinfoMessage(scip, NULL, "   ~ calculating bounds for new variables.\n\n");
   SCIP_RETCODE retcode = get_new_varbounds(A, lhs, rhs, newupper, newlower);
+
+  /* get volume bound (only single row) */
+  if (singlerow)
+  {
+    SCIPinfoMessage(scip, NULL, "    ~ calculating volume bounds. \n");
+    double logvol_ref = 0.0;
+    for (int j=0;j<newlower.size();j++)
+    {
+      assert(newupper[j] < 1e20);
+      assert(newlower[j] > -1e20);
+      logvol_ref += log(conv<double>(newupper[j] - newlower[j]));
+    }
+    SCIPinfoMessage(scip, NULL, "    reformulation log volume: %g \n\n", logvol_ref);
+  }
 
   /* write objective function */
   SCIPinfoMessage(scip, NULL, "   ~ writing lp file.\n");

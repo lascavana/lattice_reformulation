@@ -24,6 +24,7 @@ SCIP_RETCODE get_new_varbounds(
 
 void print_ahl(
   SCIP* scip,
+  const NTL::mat_ZZ &Aext,
   const char *filename,
   std::vector<std::vector<int>> basis,
   std::vector<int> x0,
@@ -40,7 +41,8 @@ void print_pataki(
   std::vector<int> lhs,
   std::vector<int> rhs,
   std::vector<double> objfun,
-  bool maximization
+  bool maximization,
+  bool singlerow
 );
 
 

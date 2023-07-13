@@ -354,23 +354,6 @@ mat_ZZ regularize_Q(
   return Qnew;
 }
 
-void get_volume_bound(
-  mat_ZZ a
-)
-{
-  long m = a.NumRows();
-  long n = a.NumCols()-1;
-  assert(m==1);
-
-  double c = 1/0.74;
-
-  double f1 = (n-1)*(n-2)*log(3*sqrt(c)/2)/2 + (n-1)*log(2) - log(n)/2;
-  double f2 = (n-1)*log(conv<double>(a[0][n]));
-  for (int j=0; j<n; j++) f2 -= log(conv<double>(a[0][j]));
-
-  cout << "First term: " << f1 << endl;
-  cout << "Second term: " << f2 << endl;
-}
 
 /* get filename of reformulated instance */
 string get_new_filename(
@@ -511,7 +494,6 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_AHL::scip_exec)
     assert(m==1);
     SCIPinfoMessage(scip, NULL, "    ~ regularizing kernel basis. \n\n");
     Q = regularize_Q(Aext, Q);
-    get_volume_bound(Aext);
   }
 
   /* print Q */
@@ -541,7 +523,7 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_AHL::scip_exec)
 
   /* print the reformulated problem */
   string filename = get_new_filename(instancepath, highquality, diag);
-  print_ahl(scip, filename.c_str() , basis, x, upper, lower, objfun, maximization);
+  print_ahl(scip, Aext, filename.c_str() , basis, x, upper, lower, objfun, maximization);
 
 
   SCIP_CALL( SCIPdropEvent( scip, SCIP_EVENTTYPE_NODEFOCUSED, eventhdlr, NULL, -1) );

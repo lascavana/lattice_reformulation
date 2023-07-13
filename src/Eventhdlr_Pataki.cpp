@@ -322,6 +322,7 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_Pataki::scip_exec)
   SCIP_CALL( GetInstanceData(scip, A, lhs, rhs, upper, lower, objfun, maximization) );
   int m = A.NumRows();
   int n = A.NumCols();
+  bool singlerow = (m==1);
 
   /* extend constraint mat to include variable bounds */
   extend_mat(A, lhs, rhs, upper, lower);
@@ -350,7 +351,7 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_Pataki::scip_exec)
 
   /* print the reformulated problem */
   string filename = get_new_filename(instancepath);
-  print_pataki(scip, filename.c_str(), basis, lhs, rhs, objfun, maximization);
+  print_pataki(scip, filename.c_str(), basis, lhs, rhs, objfun, maximization, singlerow);
 
 
   SCIP_CALL( SCIPdropEvent( scip, SCIP_EVENTTYPE_NODEFOCUSED, eventhdlr, NULL, -1) );
