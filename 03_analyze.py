@@ -67,6 +67,76 @@ def get_reformulation_time(problem, formulation):
     print(f'  The maximum reformulation time was: {np.amax(times):.0f} ms')
 
 
+def get_volumes(problem):
+    if problem not in ['struct_s', 'struct_b', 'nostruct_s', 'nostruct_b']:
+        raise NotImplementedError
+
+    with open(f'logs/{problem}_ahl.txt') as f:
+        lines = f.readlines()
+
+    # original box #
+    logvolumes = []
+    for line in lines:
+        if line[:12] == "    original":
+            line = line.split(' ')
+            logvol = float(line[7])
+            logvolumes.append(logvol)
+    print(f'  The average log-volume of the original box was: {np.mean(logvolumes):.2f}')
+
+    # theoretical bound #
+    logvolumes_1 = []
+    logvolumes_2 = []
+    for line in lines:
+        if line[:15] == "    theoretical":
+            line = line.split(' ')
+            logvolumes_1.append(float(line[7]))
+            logvolumes_2.append(float(line[9]))
+    print(f'  The average analytical log-volume was: {np.mean(logvolumes_1):.2f} + {np.mean(logvolumes_2):.2f}')
+
+    # ahl box #
+    logvolumes = []
+    for line in lines:
+        if line[:17] == "    reformulation":
+            line = line.split(' ')
+            logvol = float(line[7])
+            logvolumes.append(logvol)
+    print(f'  The average log-volume of the AHL box was: {np.mean(logvolumes):.2f}')
+
+    # ahl poor box #
+    with open(f'logs/{problem}_ahl_poor.txt') as f:
+        lines = f.readlines()
+    logvolumes = []
+    for line in lines:
+        if line[:17] == "    reformulation":
+            line = line.split(' ')
+            logvol = float(line[7])
+            logvolumes.append(logvol)
+    print(f'  The average log-volume of the AHL_low box was: {np.mean(logvolumes):.2f}')
+
+    # ahl diag box #
+    with open(f'logs/{problem}_ahl_diag.txt') as f:
+        lines = f.readlines()
+    logvolumes = []
+    for line in lines:
+        if line[:17] == "    reformulation":
+            line = line.split(' ')
+            logvol = float(line[7])
+            logvolumes.append(logvol)
+    print(f'  The average log-volume of the AHL_diag box was: {np.mean(logvolumes):.2f}')
+
+    # kp box #
+    with open(f'logs/{problem}_kp.txt') as f:
+        lines = f.readlines()
+    logvolumes = []
+    for line in lines:
+        if line[:17] == "    reformulation":
+            line = line.split(' ')
+            logvol = float(line[7])
+            logvolumes.append(logvol)
+    print(f'  The average log-volume of the KP box was: {np.mean(logvolumes):.2f}')
+
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(

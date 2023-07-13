@@ -563,7 +563,7 @@ void print_ahl(
   output_file << "\n\n";
   output_file.close();
 
-  print_for_ls("LS.txt", basis, lhs, rhs, newupper, newlower);
+  // print_for_ls("LS.txt", basis, lhs, rhs, newupper, newlower);
 }
 
 
@@ -710,7 +710,7 @@ void print_pataki(
     k++ ;
   }
 
-  print_for_ls("LS.txt", A, lhs, rhs, newupper, newlower);
+  // print_for_ls("LS.txt", A, lhs, rhs, newupper, newlower);
 }
 
 
