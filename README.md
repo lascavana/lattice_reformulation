@@ -23,8 +23,13 @@ To reproduce the experiments, run
 python 02_solve.py <name>
 ```
 where `<name>` is in `{struct_s, struct_b, nostruct_s, nostruct_b, ms, gap, ca}`. This will generate a csv file in the `results` directory.
-To analyze the results, run
+
+### Step 4: analysis
+To analyze the performance of the different formulations, run
 ```
 python 03_analyze.py <name> <output>
 ```
-with `<output>` being either `per_instance`, `aggregated` or `boxplot`.
+with `<output>` being either `per_instance`, `aggregated` or `boxplot`. The average and maximum reformulation time for the multi-row instances can also be obtained by running
+```
+python 03_analyze.py <name> reftime
+```

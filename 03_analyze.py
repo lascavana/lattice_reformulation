@@ -13,6 +13,27 @@ def gmean(x):
         return np.exp(a.mean())
 
 
+def read_from_csv(problem, metric, seedmean=True):
+    # read csv file #
+    csv_file = f'results/{problem}.csv'
+    data = pd.read_csv(csv_file)
+    instances = set(data['instance'])
+    formulations = set(data['formulation'])
+
+    # read results according to metric of choice #
+    results = {}
+    for instance in instances:
+        results[instance] = {}
+        i_data = data.loc[data['instance'] == instance]
+        for fo in formulations:
+            if_data = i_data.loc[i_data['formulation'] == fo]
+            if seedmean:
+                results[instance][fo] = gmean(if_data[metric].values.tolist())
+            else:
+                results[instance][fo] = if_data[metric].values.tolist()
+    return results
+
+
 def box_plot(ax, data, edge_color, fill_color):
     bp = ax.boxplot(data, patch_artist=True)
 
@@ -28,6 +49,24 @@ def box_plot(ax, data, edge_color, fill_color):
     return bp
 
 
+def get_reformulation_time(problem, formulation):
+    if problem not in ['ca', 'gap', 'ms']:
+        raise NotImplementedError
+
+    with open(f'logs/{problem}_{formulation}.txt') as f:
+        lines = f.readlines()
+
+    times = []
+    for line in lines:
+        if line[:8] == "    took":
+            line = line.split(' ')
+            time = float(line[5])
+            times.append(time)
+
+    print(f'  The average reformulation time was: {np.mean(times):.0f} ms')
+    print(f'  The maximum reformulation time was: {np.amax(times):.0f} ms')
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -36,32 +75,18 @@ if __name__ == "__main__":
         )
     parser.add_argument(
         'output',
-        choices=['per_instance', 'aggregated', 'boxplot'],
+        choices=['per_instance', 'aggregated', 'boxplot', 'reftime'],
         )
     args = parser.parse_args()
     problem = args.problem
     output = args.output
     metric = 'nnodes'
 
-    # read csv file #
-    csv_file = f'results/{problem}.csv'
-    data = pd.read_csv(csv_file)
-    instances = set(data['instance'])
-    formulations = set(data['formulation'])
-
-    # read results according to metric of choice #
-    results = {}
-    for instance in instances:
-        results[instance] = {}
-        i_data = data.loc[data['instance'] == instance]
-        for fo in formulations:
-            if_data = i_data.loc[i_data['formulation'] == fo]
-            results[instance][fo] = gmean(if_data[metric].values.tolist())
-
-
 
     # OPTION1: results per instance and formulation #
     if output == 'per_instance':
+        results = read_from_csv(problem, metric)
+
         formulations = ['orig', 'ahl', 'ahl_poor', 'pataki']
         s = f"              "
         for fo in formulations:
@@ -77,9 +102,11 @@ if __name__ == "__main__":
 
     # OPTION2: aggregated results per formulation #
     if output == 'aggregated':
+        results = read_from_csv(problem, metric)
+
         formulations = ['orig', 'ahl', 'ahl_poor', 'pataki']
         for fo in formulations:
-            r = [results[instance][fo] for instance in instances]
+            r = [results[instance][fo] for instance in results.keys()]
             r = gmean(r)
             print(fo, f"{r:.2f}")
 
@@ -89,18 +116,12 @@ if __name__ == "__main__":
         if problem not in ['ca', 'gap', 'ms']:
             raise NotImplementedError
         
-        results = {}
-        for instance in instances:
-            results[instance] = {}
-            i_data = data.loc[data['instance'] == instance]
-            for fo in formulations:
-                if_data = i_data.loc[i_data['formulation'] == fo]
-                results[instance][fo] = if_data[metric].values.tolist()
+        results = read_from_csv(problem, metric, seedmean=False)
 
-        orig = [results[instance]['orig'] for instance in instances]
-        ahl = [results[instance]['ahl'] for instance in instances]
-        ahl_poor = [results[instance]['ahl_poor'] for instance in instances]
-        pataki = [results[instance]['pataki'] for instance in instances]
+        orig = [results[instance]['orig'] for instance in results.keys()]
+        ahl = [results[instance]['ahl'] for instance in results.keys()]
+        ahl_poor = [results[instance]['ahl_poor'] for instance in results.keys()]
+        pataki = [results[instance]['pataki'] for instance in results.keys()]
 
         # Creating plot
         fig, ax = plt.subplots()
@@ -123,4 +144,11 @@ if __name__ == "__main__":
         # ax.set_ylim([50,1e7])
         # plt.show()
         plt.savefig(f'results/{problem}.pdf')
+
+
+    # OPTION4: reformulation time #
+    if output == 'reftime':
+        for fo in ['ahl', 'ahl_poor', 'kp']:
+            print(f'Formulation: {fo}')
+            get_reformulation_time(problem, fo)
 
