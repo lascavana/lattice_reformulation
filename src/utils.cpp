@@ -345,42 +345,53 @@ void print_for_ls(
   }
 
   ofstream output_file2(filename);
-  output_file2 << nvars << " " << nconss << endl;
+  output_file2 << "maximize +1 x1\n";
 
   /* write constraint matrix */
+  output_file2 << "Subject to \n";
   for (int i=0;i<n;i++)
   {
     if (rhs[i]>1e9) continue;
-    for (int j=nvars-1;j>-1;j--)
-      output_file2 << basis[i][j] << " ";
+    output_file2 << "C" << i << ": ";
+    for (int j=0;j<nvars;j++)
+    {
+        if (basis[i][nvars-1-j] > 0)
+        {
+            output_file2 << "+" << basis[i][nvars-1-j] << " x" << j+1 << " ";
+        }
+        else if (basis[i][nvars-1-j] < 0)
+        {
+            output_file2 << basis[i][nvars-1-j] << " x" << j+1 << " ";
+        }
+    }
+    output_file2 << "<= " << rhs[i];
     output_file2 << "\n";
   }
   for (int i=0;i<n;i++)
   {
     if (lhs[i]<-1e9) continue;
-    for (int j=nvars-1;j>-1;j--)
-      output_file2 << -basis[i][j] << " ";
+    output_file2 << "M" << i << ": ";
+    for (int j=0;j<nvars;j++)
+    {
+        if (basis[i][nvars-1-j] > 0)
+        {
+            output_file2 << -basis[i][nvars-1-j] << " x" << j+1 << " ";
+        }
+        else if (basis[i][nvars-1-j] < 0)
+        {
+            output_file2 << "+" << -basis[i][nvars-1-j] << " x" << j+1 << " ";
+        }
+    }
+    output_file2 << "<= " << -lhs[i] << " ";
     output_file2 << "\n";
   }
-
-  /* write b */
-  for (int i=0;i<n;i++) 
-  {
-    if (rhs[i]>1e9) continue;
-    output_file2 << rhs[i] << " ";
-  }
-  for (int i=0;i<n;i++) 
-  {
-    if (lhs[i]<-1e9) continue;
-    output_file2 << -lhs[i] << " ";
-  }
-  output_file2 << "\n";
 
   /* write upper and lower bounds */
-  for (int j=nvars-1;j>-1;j--) output_file2 << lower[j] << " ";
-  output_file2 << "\n";
-  for (int j=nvars-1;j>-1;j--) output_file2 << upper[j] << " ";
-  output_file2 << "\n";
+  output_file2 << "Bounds \n";
+  for (int j=0;j<nvars;j++)
+  {
+    output_file2 << lower[nvars-1-j] << " <= x" << j+1 << " <= " <<  upper[j] << "\n";
+  }
 
   output_file2.close();
 
@@ -563,7 +574,7 @@ void print_ahl(
   output_file << "\n\n";
   output_file.close();
 
-  // print_for_ls("LS.txt", basis, lhs, rhs, newupper, newlower);
+//   print_for_ls("LS.lp", basis, lhs, rhs, newupper, newlower);
 }
 
 
