@@ -393,6 +393,13 @@ void print_for_ls(
     output_file2 << lower[nvars-1-j] << " <= x" << j+1 << " <= " <<  upper[j] << "\n";
   }
 
+  output_file2 << "Generals \n";
+  for (int j=0;j<nvars;j++)
+  {
+    output_file2 << " x" << j+1;
+  }
+  output_file2 << "\n";
+
   output_file2.close();
 
 }
