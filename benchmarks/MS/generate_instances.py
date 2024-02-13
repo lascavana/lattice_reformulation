@@ -7,11 +7,11 @@ def generate_markshare(filename, m, L, U, rng):
     b = b.astype(int)
 
     with open(filename, 'w') as lp_file:
-        lp_file.write("minimize\nOBJ:" + "".join([f" +1 x{j+n+1}" for j in range(2*m)]) + "\n")
+        lp_file.write("minimize\nOBJ: +1\n")
         lp_file.write("\nsubject to\n")
 
         for i in range(m):
-            lp_file.write(f"C{i+1}:" + "".join([f" +{A[i,j]} x{j+1}" for j in range(n)]) + f" +1 x{n+1+2*i} -1 x{n+2+2*i}" + f" = {b[i]}\n")
+            lp_file.write(f"C{i+1}:" + "".join([f" +{A[i,j]} x{j+1}" for j in range(n)]) + f" = {b[i]}\n")
 
         lp_file.write("\nbinary\n" + " ".join([f"x{j+1}" for j in range(n)]) + "\n")
 
