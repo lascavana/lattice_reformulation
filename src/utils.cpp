@@ -390,7 +390,7 @@ void print_for_ls(
   output_file2 << "Bounds \n";
   for (int j=0;j<nvars;j++)
   {
-    output_file2 << lower[nvars-1-j] << " <= x" << j+1 << " <= " <<  upper[j] << "\n";
+    output_file2 << lower[nvars-1-j] << " <= x" << j+1 << " <= " <<  upper[nvars-1-j] << "\n";
   }
 
   output_file2 << "Generals \n";
@@ -728,7 +728,7 @@ void print_pataki(
     k++ ;
   }
 
-  // print_for_ls("LS.txt", A, lhs, rhs, newupper, newlower);
+//   print_for_ls("LS.lp", A, lhs, rhs, newupper, newlower);
 }
 
 
