@@ -9,6 +9,7 @@ cd ..
 rm -r logs
 mkdir logs
 
+
 # struct_s
 for i in {1..30}
 do
@@ -69,5 +70,9 @@ do
   ./build/reformulate benchmarks/CA/instance_${i}.lp kp settingsfile.set >> logs/ca_kp.txt
 done
 
-
+# MIPLIB
+for i in benchmarks/MIPLIB_subset/*.mps; do
+    echo $i
+    ./build/reformulate $i ahl settingsfile.set
+done
 
