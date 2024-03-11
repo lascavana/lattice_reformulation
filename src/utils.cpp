@@ -459,7 +459,8 @@ void print_ahl(
   //nnegative_quad_transform(scip, basis, lhs, rhs, newupper, newlower, obj);
 
   /* get volume bound (only single row) */
-  if (m==1)
+  int CALCULATE_VOL_BOUND = FALSE;
+  if (m==1 && CALCULATE_VOL_BOUND)
   {
     bound_volumes(scip, Aext, lower, upper, newlower, newupper);
   }
