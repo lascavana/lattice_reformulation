@@ -70,10 +70,3 @@ do
   ./build/reformulate benchmarks/CA/instance_${i}.lp kp settingsfile.set >> logs/ca_kp.txt
 done
 
-# MIPLIB
-for i in benchmarks/MIPLIB/*.mps; do
-    echo $i
-    ./build/reformulate $i ahl settingsfile.set
-    ./build/reformulate $i kp settingsfile.set
-done
-
