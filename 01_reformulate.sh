@@ -71,8 +71,9 @@ do
 done
 
 # MIPLIB
-for i in benchmarks/MIPLIB_subset/*.mps; do
+for i in benchmarks/MIPLIB/*.mps; do
     echo $i
     ./build/reformulate $i ahl settingsfile.set
+    ./build/reformulate $i kp settingsfile.set
 done
 
