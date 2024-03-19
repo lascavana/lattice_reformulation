@@ -647,9 +647,14 @@ void print_pataki(
   output_file << "subject to" << "\n";
 
   /* write constraints */
+  /* note: equality constraints are written in the fist loop */
+  int equality_cons = false; 
   for (int i=0; i<m; i++)
   {
+    equality_cons = false;
+
     if (lhs[i] < -1e9) continue;
+    if (lhs[i] == rhs[i]) equality_cons = true;
 
     conss_counter++;
     output_file << "C" << conss_counter << ": ";
@@ -667,13 +672,22 @@ void print_pataki(
         }
       }
     }
-    output_file << " >= ";
+    if (equality_cons)
+    {
+        output_file << " = ";
+    }
+    else
+    {
+        output_file << " >= ";
+    }
+    
     output_file << lhs[i] << "\n";
 
   }
   for (int i=0; i<m; i++)
   {
     if (rhs[i] > 1e9) continue;
+    if (lhs[i] == rhs[i]) continue; // equality, already written 
 
     conss_counter++;
     output_file << "C" << conss_counter << ": ";
