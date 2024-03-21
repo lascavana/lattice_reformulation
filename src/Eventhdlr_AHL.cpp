@@ -467,6 +467,19 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_AHL::scip_exec)
   int n = Aext.NumCols() - 1;
   SCIPinfoMessage(scip, NULL, "    Aext dimensions: (%d, %d)\n\n", m, n+1);
 
+  /* print Aext */
+  bool print_Aext = true; 
+  if (print_Aext)
+  {
+    ofstream output_file1("Aext.txt");
+    for (int i=0;i<m;i++)
+    {
+      for (int j=0;j<n+1;j++)
+        output_file1 << Aext[i][j] << " ";
+      output_file1 << "\n";
+    }
+  }
+
 
   /* get kernel basis */
   mat_ZZ Q; vec_ZZ x0; ZZ determ;
@@ -497,7 +510,7 @@ SCIP_DECL_EVENTEXEC(Eventhdlr_AHL::scip_exec)
   }
 
   /* print Q */
-  bool print_Q = false; 
+  bool print_Q = true; 
   if (print_Q)
   {
     ofstream output_file2("Q.txt");
